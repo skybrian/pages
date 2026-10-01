@@ -1,0 +1,15 @@
+---
+layout: base.njk
+title: skybrian’s pages
+---
+<ul class="page-list">
+  {% for entry in collections.pages | reverse %}
+  <li>
+    <a href="{{ entry.url | escape }}">{{ entry.data.title | escape }}</a>
+    <time datetime="{{ entry.date | isoDate }}">{{ entry.date | isoDate }}</time>
+    {% if entry.data.description %}<p>{{ entry.data.description | escape }}</p>{% endif %}
+  </li>
+  {% else %}
+  <li>No pages yet.</li>
+  {% endfor %}
+</ul>
