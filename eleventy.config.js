@@ -1,5 +1,9 @@
 export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
+  // Keep referenced post images alongside each page's generated HTML.
+  eleventyConfig.addPassthroughCopy("src/pages/**/*.{png,jpg,jpeg,gif,webp,avif,svg}", {
+    mode: "html-relative",
+  });
   eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
 
   return {

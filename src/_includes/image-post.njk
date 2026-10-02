@@ -1,0 +1,9 @@
+---
+layout: base.njk
+---
+<figure class="image-post">
+  <a href="{{ image | escape }}" aria-label="View full-size image">
+    <img src="{{ image | escape }}" alt="{{ imageAlt | escape }}"{% if imageWidth and imageHeight %} width="{{ imageWidth | escape }}" height="{{ imageHeight | escape }}"{% endif %}>
+  </a>
+  <figcaption>{{ content | safe }}</figcaption>
+</figure>
