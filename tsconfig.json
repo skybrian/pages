@@ -3,6 +3,8 @@
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "strict": true,
     "noEmit": true,
     "erasableSyntaxOnly": true,
@@ -13,5 +15,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["preview/**/*.ts", "eleventy.config.js"]
+  "include": ["preview/**/*.ts", "preview/**/*.tsx", "eleventy.config.js"]
 }

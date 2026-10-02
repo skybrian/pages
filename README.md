@@ -17,6 +17,12 @@ UTF-8, and non-regular files are not linked. Text previews are limited to
 downloaded or served as raw content. Supported source extensions are syntax
 highlighted with MicroLighter; unrecognized extensions remain plain text.
 
+Preview-only server-rendered pages can be authored as `.tsx` files under
+`preview/`. The preview config loads their TypeScript entry points with the
+scoped `tsx` loader, and `preview/render.tsx` provides `renderDocument()` for
+rendering Preact children as complete HTML documents. Run `npm test` to execute
+the TypeScript and TSX preview tests.
+
 Enable the pre-commit typecheck hook for this worktree with:
 
 ```sh
