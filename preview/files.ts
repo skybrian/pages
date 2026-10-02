@@ -1,4 +1,5 @@
-import { lstat, readFile, readdir, realpath } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { lstat, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -76,15 +77,21 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       }
       const stat = await lstat(targetPath);
       if (stat.isFile()) {
-        const contents = await readFile(targetPath);
         const name = segments.at(-1) ?? "download";
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/octet-stream");
         res.setHeader("Content-Disposition", `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(name)}`);
         res.setHeader("X-Content-Type-Options", "nosniff");
         res.setHeader("Cache-Control", "no-store");
-        res.setHeader("Content-Length", contents.byteLength);
-        return res.end(head ? undefined : contents);
+        res.setHeader("Content-Length", stat.size);
+        if (head) return res.end();
+
+        const stream = createReadStream(targetPath);
+        stream.on("error", (error) => {
+          if (res.headersSent) res.destroy(error);
+          else next(error);
+        });
+        return stream.pipe(res);
       }
       if (!stat.isDirectory()) return htmlResponse(res, 404, errorPage(404, "Not found"), head);
 
