@@ -125,11 +125,22 @@ describe("preview file browser", () => {
   it("uses a full shared document for errors and keeps directory layout unbulleted", async () => {
     const listing = await (await fetch(`${origin}/admin/files/`)).text();
     assert.match(listing, /^<!doctype html><html><head>/);
-    assert.match(listing, /body\{line-height:1\.6\}ul\{list-style:none;padding-left:0\}/);
+    assert.match(listing, /ul\{list-style:none;padding-left:0\}/);
     assert.doesNotMatch(listing, /microlighter|data-syntax-theme/);
     const missing = await (await fetch(`${origin}/admin/files/missing`)).text();
     assert.match(missing, /^<!doctype html><html><head>/);
     assert.match(missing, /<title>404<\/title>/);
+  });
+
+  it("shares page margins and typography between directories and source views", async () => {
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    const source = await (await fetch(`${origin}/admin/files/sample.ts`)).text();
+    const bodyStyles = (html: string) => html.match(/body\{[^}]+\}/)?.[0];
+    assert.equal(bodyStyles(listing), bodyStyles(source));
+    assert.match(bodyStyles(listing)!, /max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px\/1\.6/);
+    for (const html of [listing, source]) {
+      assert.match(html, /name="viewport" content="width=device-width,initial-scale=1"/);
+    }
   });
 
   it("allows dot-prefixed names that are not parent traversal", async () => {
