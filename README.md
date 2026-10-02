@@ -2,6 +2,20 @@
 
 One-off pages and charts for https://pages.skybrian.com.
 
+## Development checks
+
+Run `npm run typecheck` to check TypeScript and JavaScript types without
+emitting files. To run the build, use `npm run build`.
+
+Enable the pre-commit typecheck hook for this worktree with:
+
+```sh
+git config --local core.hooksPath .githooks
+```
+
+The hook checks the working tree, not just the staged snapshot. You can bypass
+it for a commit with `git commit --no-verify`.
+
 ## Image posts
 
 Give each post a directory in `src/pages/`, with its image next to `index.md`:
