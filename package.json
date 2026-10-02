@@ -5,6 +5,7 @@
   "scripts": {
     "build": "eleventy",
     "dev": "eleventy --serve",
+    "test": "node --experimental-strip-types --test preview/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

@@ -7,6 +7,12 @@ One-off pages and charts for https://pages.skybrian.com.
 Run `npm run typecheck` to check TypeScript and JavaScript types without
 emitting files. To run the build, use `npm run build`.
 
+When running the preview server with `npm run dev`, open
+`/admin/files/` to browse the current worktree. This browser is registered only
+in Eleventy's serve mode; production builds do not emit admin pages. It is
+read-only, serves files as forced downloads, and blocks symlinks rather than
+following them.
+
 Enable the pre-commit typecheck hook for this worktree with:
 
 ```sh
