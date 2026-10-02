@@ -1,3 +1,11 @@
+/**
+ * @typedef {{
+ *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
+ *   addFilter: (name: string, callback: (date: Date) => string) => void
+ * }} SiteConfig
+ */
+
+/** @param {SiteConfig} eleventyConfig */
 export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   // Keep referenced post images alongside each page's generated HTML.

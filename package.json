@@ -4,12 +4,15 @@
   "type": "module",
   "scripts": {
     "build": "eleventy",
-    "dev": "eleventy --serve"
+    "dev": "eleventy --serve",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "@11ty/eleventy": "3.1.6"
+    "@11ty/eleventy": "3.1.6",
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
   }
 }
