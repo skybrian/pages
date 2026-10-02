@@ -5,13 +5,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer, request } from "node:http";
 import { after, before, describe, it } from "node:test";
-import { createFileBrowserMiddleware } from "./files.ts";
+import { createFileBrowserMiddleware, languageForFilename } from "./files.ts";
+import { createMicrolighterAssetsMiddleware } from "./microlighter-assets.ts";
 
 describe("preview file browser", () => {
   let root: string;
   let outside: string;
   let server: ReturnType<typeof createServer>;
   let origin: string;
+  let fileMiddleware: ReturnType<typeof createFileBrowserMiddleware>;
+  let assetsMiddleware: ReturnType<typeof createMicrolighterAssetsMiddleware>;
 
   function rawGet(requestPath: string, method = "GET"): Promise<{ status: number; headers: Headers; body: string }> {
     return new Promise((resolve, reject) => {
@@ -45,6 +48,8 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "nested", "hello <&.html"), "<script>alert('x')</script>");
     await writeFile(path.join(root, "README"), "plain UTF-8: café");
     await writeFile(path.join(root, ".gitignore"), "node_modules/\n");
+    await writeFile(path.join(root, "sample.ts"), "const answer: number = 42;");
+    await writeFile(path.join(root, "unknown.xyz"), "<not markup>");
     await writeFile(path.join(root, "binary.txt"), Buffer.from([0x41, 0x00, 0x42]));
     await writeFile(path.join(root, "invalid-utf8.txt"), Buffer.from([0xc3, 0x28]));
     await writeFile(path.join(root, "large.txt"), Buffer.alloc(1024 * 1024 + 1, 0x61));
@@ -53,10 +58,15 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "owner's file.txt"), "apostrophe");
     await writeFile(path.join(outside, "secret"), "secret");
     await symlink(outside, path.join(root, "escape"));
+    fileMiddleware = createFileBrowserMiddleware(root);
+    assetsMiddleware = createMicrolighterAssetsMiddleware(path.resolve("."));
     server = createServer((req, res) => {
-      void createFileBrowserMiddleware(root)(req, res, () => {
-        res.statusCode = 418;
-        res.end("fell through");
+      void assetsMiddleware(req, res, (assetError) => {
+        if (assetError) throw assetError;
+        void fileMiddleware(req, res, () => {
+          res.statusCode = 418;
+          res.end("fell through");
+        });
       });
     });
     server.listen(0);
@@ -123,9 +133,48 @@ describe("preview file browser", () => {
     const readme = await (await fetch(`${origin}/admin/files/README`)).text();
     assert.match(readme, /plain UTF-8: café/);
     assert.match((await fetch(`${origin}/admin/files/.gitignore`)).status.toString(), /^200$/);
+    const typescript = await (await fetch(`${origin}/admin/files/sample.ts`)).text();
+    assert.match(typescript, /class="language-typescript"/);
+    assert.match(typescript, /data-syntax-theme="github"/);
+    assert.match(typescript, /microlighter\.min\.js/);
+    assert.match((await fetch(`${origin}/admin/files/unknown.xyz`)).status.toString(), /^200$/);
+    const unknown = await (await fetch(`${origin}/admin/files/unknown.xyz`)).text();
+    assert.match(unknown, /class="language-plaintext"/);
+    assert.match(unknown, /&lt;not markup&gt;/);
+    assert.doesNotMatch(unknown, /<not markup>/);
+    const directoryListing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.doesNotMatch(directoryListing, /microlighter\.min\.js/);
     const head = await fetch(url, { method: "HEAD" });
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
+  });
+
+  it("maps supported filename extensions and defaults unsupported names to plaintext", () => {
+    for (const [filename, language] of [
+      ["file.ts", "typescript"], ["file.js", "javascript"], ["file.json", "json"],
+      ["file.css", "css"], ["file.html", "html"], ["file.md", "markdown"],
+      ["file.sh", "bash"], ["file.toml", "toml"], ["file.unknown", "plaintext"],
+    ]) assert.equal(languageForFilename(filename), language);
+  });
+
+  it("serves only allowlisted MicroLighter assets with safe methods and MIME types", async () => {
+    const script = await fetch(`${origin}/admin/assets/microlighter/dist/microlighter.min.js`);
+    assert.equal(script.status, 200);
+    assert.match(script.headers.get("content-type")!, /^text\/javascript/);
+    assert.match(await script.text(), /document\.addEventListener/);
+    const grammar = await fetch(`${origin}/admin/assets/microlighter/dist/grammars/typescript.js`);
+    assert.equal(grammar.status, 200);
+    assert.match(grammar.headers.get("content-type")!, /^text\/javascript/);
+    const theme = await fetch(`${origin}/admin/assets/microlighter/dist/themes/github.css`);
+    assert.equal(theme.status, 200);
+    assert.match(theme.headers.get("content-type")!, /^text\/css/);
+    const head = await fetch(`${origin}/admin/assets/microlighter/dist/grammars/typescript.js`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+    assert.equal((await fetch(`${origin}/admin/assets/microlighter/package.json`)).status, 404);
+    assert.equal((await fetch(`${origin}/admin/assets/microlighter/dist/index.js`)).status, 404);
+    assert.equal((await rawGet("/admin/assets/microlighter/%2e%2e/package.json")).status, 400);
+    assert.equal((await fetch(`${origin}/admin/assets/microlighter/dist/microlighter.min.js`, { method: "POST" })).status, 405);
   });
 
   it("rejects binary, invalid UTF-8, and oversized files without exposing contents", async () => {

@@ -14,7 +14,8 @@ read-only and blocks symlinks rather than following them. Detected UTF-8 text
 files are displayed as escaped text in a separate HTML page; binary, invalid
 UTF-8, and non-regular files are not linked. Text previews are limited to
 1 MiB, and files exceeding that limit are not previewed. No files are
-downloaded or served as raw content.
+downloaded or served as raw content. Supported source extensions are syntax
+highlighted with MicroLighter; unrecognized extensions remain plain text.
 
 Enable the pre-commit typecheck hook for this worktree with:
 

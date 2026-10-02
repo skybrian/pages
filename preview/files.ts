@@ -4,6 +4,24 @@ import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 const ROUTE = "/admin/files";
+const ASSET_ROUTE = "/admin/assets/microlighter";
+const LANGUAGE_BY_EXTENSION: Record<string, string> = {
+  ".bash": "bash",
+  ".cjs": "javascript",
+  ".css": "css",
+  ".html": "html",
+  ".htm": "html",
+  ".js": "javascript",
+  ".jsx": "javascript",
+  ".json": "json",
+  ".md": "markdown",
+  ".markdown": "markdown",
+  ".mjs": "javascript",
+  ".sh": "bash",
+  ".toml": "toml",
+  ".ts": "typescript",
+  ".tsx": "tsx",
+};
 // Text previews are intentionally bounded so listings and direct requests never
 // read arbitrarily large files into memory.
 const MAX_TEXT_BYTES = 1024 * 1024;
@@ -12,6 +30,10 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[char]!);
+}
+
+export function languageForFilename(filename: string): string {
+  return LANGUAGE_BY_EXTENSION[path.extname(filename).toLowerCase()] ?? "plaintext";
 }
 
 async function readTextFile(filePath: string): Promise<string | null> {
@@ -126,7 +148,8 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
         const breadcrumbs = [`<a href="${ROUTE}/">root</a>`, ...segments.slice(0, -1).map((part, i) =>
           `<a href="${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/">${escapeHtml(part)}</a>`),
           escapeHtml(name)].join(" / ");
-        const body = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(name)}</title></head><body><h1>${escapeHtml(name)}</h1><nav>${breadcrumbs}</nav><p><a href="${parentPath}">Back to parent</a></p><pre><code>${escapeHtml(text)}</code></pre></body></html>`;
+        const language = languageForFilename(name);
+        const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(name)}</title><link rel="stylesheet" href="${ASSET_ROUTE}/dist/themes/github.css"><style>body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.5 system-ui,sans-serif;color:#24292f}pre{overflow:auto;padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff}code{font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}</style></head><body data-syntax-theme="github"><h1>${escapeHtml(name)}</h1><nav>${breadcrumbs}</nav><p><a href="${parentPath}">Back to parent</a></p><pre><code class="language-${language}">${escapeHtml(text)}</code></pre><script type="module" src="${ASSET_ROUTE}/dist/microlighter.min.js"></script></body></html>`;
         return htmlResponse(res, 200, body, head);
       }
       if (!stat.isDirectory()) return htmlResponse(res, 404, errorPage(404, "Not found"), head);

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
  * @typedef {{
  *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
  *   addFilter: (name: string, callback: (date: Date) => string) => void,
- *   setServerOptions: (options: { middleware: Array<(...args: any[]) => unknown> }) => void
+ *   setServerOptions: (options: { middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
  * }} SiteConfig
  */
 
@@ -18,9 +18,15 @@ export default async function (eleventyConfig) {
   eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
 
   if (process.env.ELEVENTY_RUN_MODE === "serve") {
-    const { createFileBrowserMiddleware } = await import("./preview/files.ts");
+    const [{ createFileBrowserMiddleware }, { createMicrolighterAssetsMiddleware }] = await Promise.all([
+      import("./preview/files.ts"),
+      import("./preview/microlighter-assets.ts"),
+    ]);
     eleventyConfig.setServerOptions({
-      middleware: [createFileBrowserMiddleware(fileURLToPath(new URL(".", import.meta.url)))],
+      middleware: [
+        createMicrolighterAssetsMiddleware(fileURLToPath(new URL(".", import.meta.url))),
+        createFileBrowserMiddleware(fileURLToPath(new URL(".", import.meta.url))),
+      ],
     });
   }
 
