@@ -2,9 +2,9 @@ import { constants } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { renderDirectoryListing, renderErrorPage, renderSourceView, type Breadcrumb, type DirectoryEntry } from "./views.tsx";
 
 const ROUTE = "/admin/files";
-const ASSET_ROUTE = "/admin/assets/microlighter";
 const LANGUAGE_BY_EXTENSION: Record<string, string> = {
   ".bash": "bash",
   ".cjs": "javascript",
@@ -25,12 +25,6 @@ const LANGUAGE_BY_EXTENSION: Record<string, string> = {
 // Text previews are intentionally bounded so listings and direct requests never
 // read arbitrarily large files into memory.
 const MAX_TEXT_BYTES = 1024 * 1024;
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[char]!);
-}
 
 export function languageForFilename(filename: string): string {
   return LANGUAGE_BY_EXTENSION[path.extname(filename).toLowerCase()] ?? "plaintext";
@@ -82,8 +76,14 @@ function htmlResponse(res: ServerResponse, status: number, body: string, head: b
   else res.end(body);
 }
 
-function errorPage(status: number, text: string): string {
-  return `<!doctype html><meta charset="utf-8"><title>${status}</title><h1>${status}</h1><p>${escapeHtml(text)}</p>`;
+function breadcrumbs(segments: string[]): Breadcrumb[] {
+  return [
+    { label: "root", href: `${ROUTE}/` },
+    ...segments.map((part, i) => ({
+      label: part,
+      href: `${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/`,
+    })),
+  ];
 }
 
 /**
@@ -117,13 +117,13 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
         throw new Error("invalid segment");
       }
     } catch {
-      return htmlResponse(res, 400, errorPage(400, "Invalid path"), head);
+      return htmlResponse(res, 400, renderErrorPage(400, "Invalid path"), head);
     }
 
     const targetPath = path.resolve(root, ...segments);
     const relative = path.relative(root, targetPath);
     if (isOutsideRoot(relative)) {
-      return htmlResponse(res, 400, errorPage(400, "Invalid path"), head);
+      return htmlResponse(res, 400, renderErrorPage(400, "Invalid path"), head);
     }
 
     try {
@@ -131,35 +131,34 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       for (const segment of segments) {
         current = path.join(current, segment);
         const stat = await lstat(current);
-        if (stat.isSymbolicLink()) return htmlResponse(res, 404, errorPage(404, "Not found"), head);
+        if (stat.isSymbolicLink()) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), head);
       }
       const canonicalRoot = await realpath(root);
       const canonicalTarget = await realpath(targetPath);
       const canonicalRelative = path.relative(canonicalRoot, canonicalTarget);
       if (isOutsideRoot(canonicalRelative)) {
-        return htmlResponse(res, 404, errorPage(404, "Not found"), head);
+        return htmlResponse(res, 404, renderErrorPage(404, "Not found"), head);
       }
       const stat = await lstat(targetPath);
       if (stat.isFile()) {
         const text = await readTextFile(targetPath);
-        if (text === null) return htmlResponse(res, 415, errorPage(415, "This file is not a supported text file"), head);
+        if (text === null) return htmlResponse(res, 415, renderErrorPage(415, "This file is not a supported text file"), head);
         const name = segments.at(-1) ?? "";
         const parentPath = `${ROUTE}${segments.length > 1 ? `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}` : ""}/`;
-        const breadcrumbs = [`<a href="${ROUTE}/">root</a>`, ...segments.slice(0, -1).map((part, i) =>
-          `<a href="${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/">${escapeHtml(part)}</a>`),
-          escapeHtml(name)].join(" / ");
         const language = languageForFilename(name);
-        const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(name)}</title><link rel="stylesheet" href="${ASSET_ROUTE}/dist/themes/github.css"><style>body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#24292f}pre{overflow:auto;padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff}code{font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}</style></head><body data-syntax-theme="github"><h1>${escapeHtml(name)}</h1><nav>${breadcrumbs}</nav><p><a href="${parentPath}">Back to parent</a></p><pre><code class="language-${language}">${escapeHtml(text)}</code></pre><script type="module" src="${ASSET_ROUTE}/dist/microlighter.min.js"></script></body></html>`;
-        return htmlResponse(res, 200, body, head);
+        return htmlResponse(res, 200, renderSourceView({
+          name,
+          breadcrumbs: breadcrumbs(segments.slice(0, -1)),
+          parentHref: parentPath,
+          language,
+          source: text,
+        }), head);
       }
-      if (!stat.isDirectory()) return htmlResponse(res, 404, errorPage(404, "Not found"), head);
+      if (!stat.isDirectory()) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), head);
 
       const entries = await readdir(targetPath, { withFileTypes: true });
       entries.sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name));
-      const parent = segments.length
-        ? `<li><a href="${ROUTE}${segments.length > 1 ? `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}` : ""}/">../</a></li>`
-        : "";
-      const rows: string[] = [];
+      const entriesForView: DirectoryEntry[] = [];
       for (const entry of entries) {
         const isLink = entry.isSymbolicLink();
         const isDirectory = entry.isDirectory();
@@ -167,15 +166,19 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
         const href = `${ROUTE}/${[...segments, entry.name].map(encodeURIComponent).join("/")}${entry.isDirectory() ? "/" : ""}`;
         const name = `${entry.name}${isDirectory ? "/" : ""}${isLink ? " (symlink blocked)" : ""}`;
         const linked = !isLink && (isDirectory || isTextFile);
-        rows.push(`<li>${linked ? `<a href="${href}">${escapeHtml(name)}</a>` : escapeHtml(name)}</li>`);
+        entriesForView.push({ name, href: linked ? href : undefined });
       }
-      const crumbs = [`<a href="${ROUTE}/">root</a>`, ...segments.map((part, i) =>
-        `<a href="${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/">${escapeHtml(part)}</a>`)].join(" / ");
-      const body = `<!doctype html><html><head><meta charset="utf-8"><title>Files</title><style>body{line-height:1.6}ul{list-style:none;padding-left:0}</style></head><body><h1>Worktree files</h1><nav>${crumbs}</nav><ul>${parent}${rows.join("\n")}</ul></body></html>`;
-      return htmlResponse(res, 200, body, head);
+      const parentHref = segments.length
+        ? `${ROUTE}${segments.length > 1 ? `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}` : ""}/`
+        : undefined;
+      return htmlResponse(res, 200, renderDirectoryListing({
+        breadcrumbs: breadcrumbs(segments),
+        parentHref,
+        entries: entriesForView,
+      }), head);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT" || (error as NodeJS.ErrnoException).code === "ENOTDIR") {
-        return htmlResponse(res, 404, errorPage(404, "Not found"), head);
+        return htmlResponse(res, 404, renderErrorPage(404, "Not found"), head);
       }
       return next(error);
     }

@@ -43,6 +43,7 @@ describe("preview file browser", () => {
     root = await mkdtemp(path.join(tmpdir(), "pages-browser-"));
     outside = await mkdtemp(path.join(tmpdir(), "pages-outside-"));
     await mkdir(path.join(root, "nested"));
+    await mkdir(path.join(root, "crumb & <folder>"));
     await mkdir(path.join(root, "..notes"));
     await writeFile(path.join(root, ".hidden"), "hidden");
     await writeFile(path.join(root, "nested", "hello <&.html"), "<script>alert('x')</script>");
@@ -56,6 +57,8 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "..notes", "inside.txt"), "inside notes");
     await writeFile(path.join(root, "..notes-file.txt"), "leading dots");
     await writeFile(path.join(root, "owner's file.txt"), "apostrophe");
+    await writeFile(path.join(root, "hostile <style><script>.txt"), "before </script><script>alert('source')</script> after </style>");
+    await writeFile(path.join(root, "crumb & <folder>", "file.txt"), "safe");
     await writeFile(path.join(outside, "secret"), "secret");
     await symlink(outside, path.join(root, "escape"));
     fileMiddleware = createFileBrowserMiddleware(root);
@@ -100,6 +103,35 @@ describe("preview file browser", () => {
     assert.match(body, /hello%20%3C%26\.html/);
   });
 
+  it("renders hostile names and source as text, not markup", async () => {
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.match(listing, /hostile &lt;style(?:&gt;|>)&lt;script(?:&gt;|>)/);
+    assert.match(listing, /href="\/admin\/files\/hostile%20%3Cstyle%3E%3Cscript%3E\.txt"/);
+    const response = await fetch(`${origin}/admin/files/hostile%20%3Cstyle%3E%3Cscript%3E.txt`);
+    const body = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(body, /before &lt;\/script(?:&gt;|>)&lt;script(?:&gt;|>)alert\(/);
+    assert.match(body, /after &lt;\/style(?:&gt;|>)/);
+    assert.match(body, /<title>hostile &lt;style(?:&gt;|>)&lt;script(?:&gt;|>)\.txt<\/title>/);
+    assert.doesNotMatch(body, /<script>alert\('source'\)<\/script>/);
+    assert.equal((body.match(/<script\b/g) ?? []).length, 1);
+  });
+
+  it("encodes breadcrumb hrefs while rendering labels as text", async () => {
+    const body = await (await fetch(`${origin}/admin/files/crumb%20%26%20%3Cfolder%3E/file.txt`)).text();
+    assert.match(body, /href="\/admin\/files\/crumb%20%26%20%3Cfolder%3E\/">crumb &amp; &lt;folder(?:&gt;|>)<\/a>/);
+  });
+
+  it("uses a full shared document for errors and keeps directory layout unbulleted", async () => {
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.match(listing, /^<!doctype html><html><head>/);
+    assert.match(listing, /body\{line-height:1\.6\}ul\{list-style:none;padding-left:0\}/);
+    assert.doesNotMatch(listing, /microlighter|data-syntax-theme/);
+    const missing = await (await fetch(`${origin}/admin/files/missing`)).text();
+    assert.match(missing, /^<!doctype html><html><head>/);
+    assert.match(missing, /<title>404<\/title>/);
+  });
+
   it("allows dot-prefixed names that are not parent traversal", async () => {
     const listing = await (await fetch(`${origin}/admin/files/`)).text();
     assert.match(listing, /href="\/admin\/files\/\.\.notes\/"/);
@@ -122,9 +154,11 @@ describe("preview file browser", () => {
     const response = await fetch(url);
     const body = await response.text();
     assert.equal(response.status, 200);
-    assert.match(body, /&lt;script&gt;alert\(&#39;x&#39;\)&lt;\/script&gt;/);
+    assert.match(body, /&lt;script(?:&gt;|>)alert\((?:&#39;|')x(?:&#39;|')\)&lt;\/script(?:&gt;|>)/);
     assert.doesNotMatch(body, /<script>/);
     assert.match(body, /<title>hello &lt;&amp;\.html<\/title>/);
+    assert.match(body, /<nav><a href="\/admin\/files\/">root<\/a> \/ <a href="\/admin\/files\/nested\/">nested<\/a> \/ hello &lt;&amp;\.html<\/nav>/);
+    assert.doesNotMatch(body, /<a href="[^"]*hello%20%3C%26\.html">hello/);
     assert.match(body, /<a href="\/admin\/files\/nested\/">Back to parent<\/a>/);
     assert.match(response.headers.get("content-type")!, /^text\/html; charset=utf-8/);
     assert.equal(response.headers.get("content-disposition"), null);
@@ -137,10 +171,11 @@ describe("preview file browser", () => {
     assert.match(typescript, /class="language-typescript"/);
     assert.match(typescript, /data-syntax-theme="github"/);
     assert.match(typescript, /microlighter\.min\.js/);
+    assert.doesNotMatch(typescript, /preact|hydrate|client\.js/i);
     assert.match((await fetch(`${origin}/admin/files/unknown.xyz`)).status.toString(), /^200$/);
     const unknown = await (await fetch(`${origin}/admin/files/unknown.xyz`)).text();
     assert.match(unknown, /class="language-plaintext"/);
-    assert.match(unknown, /&lt;not markup&gt;/);
+    assert.match(unknown, /&lt;not markup(?:&gt;|>)/);
     assert.doesNotMatch(unknown, /<not markup>/);
     const directoryListing = await (await fetch(`${origin}/admin/files/`)).text();
     assert.doesNotMatch(directoryListing, /microlighter\.min\.js/);
