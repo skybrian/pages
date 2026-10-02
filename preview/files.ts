@@ -144,12 +144,12 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
         const text = await readTextFile(targetPath);
         if (text === null) return htmlResponse(res, 415, renderErrorPage(415, "This file is not a supported text file"), head);
         const name = segments.at(-1) ?? "";
-        const parentPath = `${ROUTE}${segments.length > 1 ? `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}` : ""}/`;
+
         const language = languageForFilename(name);
         return htmlResponse(res, 200, renderSourceView({
           name,
           breadcrumbs: breadcrumbs(segments.slice(0, -1)),
-          parentHref: parentPath,
+
           language,
           source: text,
         }), head);

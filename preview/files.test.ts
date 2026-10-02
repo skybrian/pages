@@ -170,7 +170,8 @@ describe("preview file browser", () => {
     assert.match(body, /<title>hello &lt;&amp;\.html<\/title>/);
     assert.match(body, /<nav><a href="\/admin\/files\/">root<\/a> \/ <a href="\/admin\/files\/nested\/">nested<\/a> \/ hello &lt;&amp;\.html<\/nav>/);
     assert.doesNotMatch(body, /<a href="[^"]*hello%20%3C%26\.html">hello/);
-    assert.match(body, /<a href="\/admin\/files\/nested\/">Back to parent<\/a>/);
+    assert.doesNotMatch(body, /Back to parent/);
+    assert.match(body, /<a href="\/admin\/files\/nested\/">nested<\/a>/);
     assert.match(response.headers.get("content-type")!, /^text\/html; charset=utf-8/);
     assert.equal(response.headers.get("content-disposition"), null);
     assert.equal(response.headers.get("x-content-type-options"), "nosniff");

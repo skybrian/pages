@@ -75,13 +75,11 @@ export function DirectoryListing({
 export function SourceView({
   name,
   breadcrumbs,
-  parentHref,
   language,
   source,
 }: {
   name: string;
   breadcrumbs: Breadcrumb[];
-  parentHref: string;
   language: string;
   source: string;
 }) {
@@ -89,7 +87,7 @@ export function SourceView({
     <PageLayout title={name} sourceView>
       <h1>{name}</h1>
       <Breadcrumbs items={[...breadcrumbs, { label: name }]} />
-      <p><a href={parentHref}>Back to parent</a></p>
+
       <pre><code class={`language-${language}`}>{source}</code></pre>
       <script type="module" src={`${ASSET_ROUTE}/dist/microlighter.min.js`} />
     </PageLayout>
