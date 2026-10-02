@@ -10,8 +10,11 @@ emitting files. To run the build, use `npm run build`.
 When running the preview server with `npm run dev`, open
 `/admin/files/` to browse the current worktree. This browser is registered only
 in Eleventy's serve mode; production builds do not emit admin pages. It is
-read-only, serves files as forced downloads, and blocks symlinks rather than
-following them.
+read-only and blocks symlinks rather than following them. Detected UTF-8 text
+files are displayed as escaped text in a separate HTML page; binary, invalid
+UTF-8, and non-regular files are not linked. Text previews are limited to
+1 MiB, and files exceeding that limit are not previewed. No files are
+downloaded or served as raw content.
 
 Enable the pre-commit typecheck hook for this worktree with:
 
