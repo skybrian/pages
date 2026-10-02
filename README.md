@@ -32,12 +32,28 @@ git config --local core.hooksPath .githooks
 The hook checks the working tree, not just the staged snapshot. You can bypass
 it for a commit with `git commit --no-verify`.
 
+## Page URLs and archives
+
+Put pages under their year in `src/pages/`, for example:
+
+- `src/pages/2026/anthropic-run-rates.html` → `/2026/anthropic-run-rates/`
+- `src/pages/2026/my-image-post/index.md` → `/2026/my-image-post/`
+
+The URL follows the source directory, not the post date. Start a new year by
+creating `src/pages/2027/`; no configuration change is needed. The homepage
+lists pages from all years. Year archive indexes are not generated automatically.
+
+Permanent redirects for the original, yearless URLs are maintained in
+`src/_redirects`, which is copied into the build output for Netlify. These
+also preserve direct image links. Netlify handles these redirects in production;
+the local Eleventy preview does not apply them.
+
 ## Image posts
 
-Give each post a directory in `src/pages/`, with its image next to `index.md`:
+Give each post a directory in `src/pages/2026/`, with its image next to `index.md`:
 
 ```text
-src/pages/my-image-post/
+src/pages/2026/my-image-post/
 ├── index.md
 └── example.png
 ```
@@ -59,6 +75,6 @@ Your note goes here. Markdown formatting is supported.
 
 Use the image's actual dimensions (or omit both dimension fields).
 The post appears on the home page automatically. Clicking the image opens
-the original file. The directory name determines the page URL (for example,
-`/my-image-post/`). Referenced post images are copied alongside the generated
+the original file. The year and directory name determine the page URL (for example,
+`/2026/my-image-post/`). Referenced post images are copied alongside the generated
 page, while `src/assets/` is reserved for shared site assets such as CSS.

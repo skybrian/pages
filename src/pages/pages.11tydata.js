@@ -2,6 +2,8 @@ export default {
   layout: "base.njk",
   tags: "pages",
   eleventyComputed: {
-    permalink: ({ page }) => `/${page.fileSlug}/`,
+    /** @param {{ page: { filePathStem: string } }} data */
+    permalink: ({ page }) =>
+      `${page.filePathStem.replace(/^\/pages\//, "/").replace(/\/index$/, "")}/`,
   },
 };

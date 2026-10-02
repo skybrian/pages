@@ -5,7 +5,7 @@
   "scripts": {
     "build": "eleventy",
     "dev": "eleventy --serve",
-    "test": "node --import tsx --test preview/*.test.ts preview/*.test.tsx",
+    "test": "node --import tsx --test preview/*.test.ts preview/*.test.tsx tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

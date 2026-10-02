@@ -1,0 +1,7 @@
+# Keep pre-year URLs working, including direct image and index.html links.
+/anthropic-run-rates        /2026/anthropic-run-rates/       301!
+/anthropic-run-rates/       /2026/anthropic-run-rates/       301!
+/anthropic-run-rates/*      /2026/anthropic-run-rates/:splat 301!
+/flux3-image-test           /2026/flux3-image-test/          301!
+/flux3-image-test/          /2026/flux3-image-test/          301!
+/flux3-image-test/*         /2026/flux3-image-test/:splat    301!

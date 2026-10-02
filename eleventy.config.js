@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 /** @param {SiteConfig} eleventyConfig */
 export default async function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
+  eleventyConfig.addPassthroughCopy({ "src/_redirects": "_redirects" });
   // Keep referenced post images alongside each page's generated HTML.
   eleventyConfig.addPassthroughCopy("src/pages/**/*.{png,jpg,jpeg,gif,webp,avif,svg}", {
     mode: "html-relative",
