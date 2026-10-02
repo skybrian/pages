@@ -11,6 +11,15 @@ function escapeHtml(value: string): string {
   })[char]!);
 }
 
+function encodeRfc5987(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
+function isOutsideRoot(relative: string): boolean {
+  return relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
+}
+
 function htmlResponse(res: ServerResponse, status: number, body: string, head: boolean): void {
   res.statusCode = status;
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -58,7 +67,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
 
     const targetPath = path.resolve(root, ...segments);
     const relative = path.relative(root, targetPath);
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    if (isOutsideRoot(relative)) {
       return htmlResponse(res, 400, errorPage(400, "Invalid path"), head);
     }
 
@@ -72,7 +81,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       const canonicalRoot = await realpath(root);
       const canonicalTarget = await realpath(targetPath);
       const canonicalRelative = path.relative(canonicalRoot, canonicalTarget);
-      if (canonicalRelative.startsWith("..") || path.isAbsolute(canonicalRelative)) {
+      if (isOutsideRoot(canonicalRelative)) {
         return htmlResponse(res, 404, errorPage(404, "Not found"), head);
       }
       const stat = await lstat(targetPath);
@@ -80,7 +89,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
         const name = segments.at(-1) ?? "download";
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/octet-stream");
-        res.setHeader("Content-Disposition", `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(name)}`);
+        res.setHeader("Content-Disposition", `attachment; filename="download"; filename*=UTF-8''${encodeRfc5987(name)}`);
         res.setHeader("X-Content-Type-Options", "nosniff");
         res.setHeader("Cache-Control", "no-store");
         res.setHeader("Content-Length", stat.size);

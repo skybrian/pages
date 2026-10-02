@@ -33,8 +33,12 @@ describe("preview file browser", () => {
     root = await mkdtemp(path.join(tmpdir(), "pages-browser-"));
     outside = await mkdtemp(path.join(tmpdir(), "pages-outside-"));
     await mkdir(path.join(root, "nested"));
+    await mkdir(path.join(root, "..notes"));
     await writeFile(path.join(root, ".hidden"), "hidden");
     await writeFile(path.join(root, "nested", "hello <&.html"), "<script>bad()</script>");
+    await writeFile(path.join(root, "..notes", "inside.txt"), "inside notes");
+    await writeFile(path.join(root, "..notes-file.txt"), "leading dots");
+    await writeFile(path.join(root, "owner's file.txt"), "apostrophe");
     await writeFile(path.join(outside, "secret"), "secret");
     await symlink(outside, path.join(root, "escape"));
     server = createServer((req, res) => {
@@ -74,6 +78,15 @@ describe("preview file browser", () => {
     assert.match(body, /hello%20%3C%26\.html/);
   });
 
+  it("allows dot-prefixed names that are not parent traversal", async () => {
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.match(listing, /href="\/admin\/files\/\.\.notes\/"/);
+    assert.match(listing, /href="\/admin\/files\/\.\.notes-file\.txt"/);
+    assert.match(await (await fetch(`${origin}/admin/files/..notes/`)).text(), /inside\.txt/);
+    const file = await fetch(`${origin}/admin/files/..notes-file.txt`);
+    assert.equal(await file.text(), "leading dots");
+  });
+
   it("serves files only as forced downloads and supports HEAD", async () => {
     const url = `${origin}/admin/files/nested/hello%20%3C%26.html`;
     const response = await fetch(url);
@@ -82,6 +95,9 @@ describe("preview file browser", () => {
     assert.match(response.headers.get("content-disposition")!, /^attachment;/);
     assert.equal(response.headers.get("x-content-type-options"), "nosniff");
     assert.equal(response.headers.get("cache-control"), "no-store");
+    const apostrophe = await fetch(`${origin}/admin/files/owner's%20file.txt`);
+    assert.equal(await apostrophe.text(), "apostrophe");
+    assert.match(apostrophe.headers.get("content-disposition")!, /filename\*=UTF-8''owner%27s%20file\.txt/);
     const head = await fetch(url, { method: "HEAD" });
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
