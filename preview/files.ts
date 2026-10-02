@@ -149,7 +149,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
           `<a href="${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/">${escapeHtml(part)}</a>`),
           escapeHtml(name)].join(" / ");
         const language = languageForFilename(name);
-        const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(name)}</title><link rel="stylesheet" href="${ASSET_ROUTE}/dist/themes/github.css"><style>body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.5 system-ui,sans-serif;color:#24292f}pre{overflow:auto;padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff}code{font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}</style></head><body data-syntax-theme="github"><h1>${escapeHtml(name)}</h1><nav>${breadcrumbs}</nav><p><a href="${parentPath}">Back to parent</a></p><pre><code class="language-${language}">${escapeHtml(text)}</code></pre><script type="module" src="${ASSET_ROUTE}/dist/microlighter.min.js"></script></body></html>`;
+        const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(name)}</title><link rel="stylesheet" href="${ASSET_ROUTE}/dist/themes/github.css"><style>body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#24292f}pre{overflow:auto;padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff}code{font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}</style></head><body data-syntax-theme="github"><h1>${escapeHtml(name)}</h1><nav>${breadcrumbs}</nav><p><a href="${parentPath}">Back to parent</a></p><pre><code class="language-${language}">${escapeHtml(text)}</code></pre><script type="module" src="${ASSET_ROUTE}/dist/microlighter.min.js"></script></body></html>`;
         return htmlResponse(res, 200, body, head);
       }
       if (!stat.isDirectory()) return htmlResponse(res, 404, errorPage(404, "Not found"), head);
@@ -171,7 +171,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       }
       const crumbs = [`<a href="${ROUTE}/">root</a>`, ...segments.map((part, i) =>
         `<a href="${ROUTE}/${segments.slice(0, i + 1).map(encodeURIComponent).join("/")}/">${escapeHtml(part)}</a>`)].join(" / ");
-      const body = `<!doctype html><html><head><meta charset="utf-8"><title>Files</title></head><body><h1>Worktree files</h1><nav>${crumbs}</nav><ul>${parent}${rows.join("\n")}</ul></body></html>`;
+      const body = `<!doctype html><html><head><meta charset="utf-8"><title>Files</title><style>body{line-height:1.6}ul{list-style:none;padding-left:0}</style></head><body><h1>Worktree files</h1><nav>${crumbs}</nav><ul>${parent}${rows.join("\n")}</ul></body></html>`;
       return htmlResponse(res, 200, body, head);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT" || (error as NodeJS.ErrnoException).code === "ENOTDIR") {
