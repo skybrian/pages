@@ -89,6 +89,14 @@ All entries are bundled together, so future charts share dependency chunks.
 Only `chart.ts` is a browser entry point; extraction scripts are not bundled
 or published. Adjacent `data.json` files are published alongside their pages.
 
+An optional adjacent `preview.ts` exports `renderPreview(dataPath)`, returning a
+PNG buffer. The build writes it to `/assets/charts/<page-directory-name>.png`.
+The kernel CVE page uses this as its Open Graph image for link previews.
+Its shared `plot.ts` renders both the interactive chart and a static SVG using
+JSDOM; Sharp rasterizes that SVG into a 1200×630 PNG. Updating the checked-in
+data automatically updates the preview on the next build. Preview generation
+does not require a browser or fetch external data.
+
 ### Updating kernel CVE counts
 
 The extraction script lives at

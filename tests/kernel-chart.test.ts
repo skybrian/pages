@@ -5,7 +5,6 @@ import { runInNewContext } from "node:vm";
 import { it } from "node:test";
 
 const chartPath = "src/pages/2026/kernel-cve-fixes/chart.ts";
-const source = await readFile(chartPath, "utf8");
 const page = await readFile("src/pages/2026/kernel-cve-fixes/index.html", "utf8");
 const requestedTitle = "A chart of CSVs fixed by Linux kernel releases";
 it("uses the requested title and keeps only the chart card", () => {
@@ -16,8 +15,9 @@ it("uses the requested title and keeps only the chart card", () => {
   assert.doesNotMatch(outsideCard, /<nav\\b|<header\\b|<footer\\b|class="method"/);
 });
 const compiled = buildSync({
-  stdin: { contents: source, loader: "ts", resolveDir: process.cwd() },
-  bundle: false,
+  entryPoints: [chartPath],
+  bundle: true,
+  external: ["@observablehq/plot"],
   format: "cjs",
   platform: "node",
   write: false,

@@ -6,6 +6,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { promisify } from "node:util";
 import pageData from "../src/pages/pages.11tydata.js";
+import sharp from "sharp";
 
 describe("year-based page URLs", () => {
   it("preserves years and nested directories for standalone and index pages", () => {
@@ -63,7 +64,16 @@ describe("year-based page URLs", () => {
       assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
       assert.doesNotMatch(chartHtml, /<details\b|id="table"|View values as a table/);
       assert.ok((await stat(path.join(output, "assets/charts/kernel-cve-fixes.js"))).size > 0);
-      for (const script of ["chart.ts", "update-data.ts"]) {
+      assert.match(chartHtml, /property="og:image" content="https:\/\/pages\.skybrian\.com\/assets\/charts\/kernel-cve-fixes\.png"/);
+      const preview = await readFile(path.join(output, "assets/charts/kernel-cve-fixes.png"));
+      const metadata = await sharp(preview).metadata();
+      assert.equal(metadata.format, "png");
+      assert.equal(metadata.width, 1200);
+      assert.equal(metadata.height, 630);
+      assert.ok(preview.length < 1_000_000);
+      const { channels } = (await sharp(preview).stats());
+      assert.ok(channels.some(channel => channel.min < channel.max), "preview is not blank");
+      for (const script of ["chart.ts", "plot.ts", "preview.ts", "update-data.ts"]) {
         await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
       }
       const redirects = await readFile(path.join(output, "_redirects"), "utf8");

@@ -17,7 +17,7 @@ import { buildChartBundles } from "./scripts/build-charts.js";
 /** @param {SiteConfig} eleventyConfig */
 export default async function (eleventyConfig) {
   // Chart TS is bundled after Eleventy has written the site's output.
-  eleventyConfig.addWatchTarget("src/pages/**/chart.ts");
+  eleventyConfig.addWatchTarget("src/pages/**/*.ts");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
   eleventyConfig.on("eleventy.after", ({ directories, outputMode }) =>
     buildChartBundles({ siteOutputDirectory: directories.output, outputMode }),

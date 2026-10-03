@@ -1,6 +1,8 @@
-import { readdir, rm } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { access, readdir, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { tsImport } from "tsx/esm/api";
 
 /** @param {string} directory
  * @returns {Promise<Array<[string, string]>>}
@@ -61,4 +63,19 @@ export async function buildChartBundles({
     platform: "browser",
     target: "es2020",
   });
+
+  // Optional server-only preview entry points are never bundled for the browser.
+  for (const [name, chartPath] of entries) {
+    const previewPath = resolve(dirname(chartPath), "preview.ts");
+    try {
+      await access(previewPath);
+    } catch (error) {
+      if (/** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT") continue;
+      throw error;
+    }
+    /** @type {{ renderPreview: (dataPath: string) => Promise<Buffer> }} */
+    const { renderPreview } = await tsImport(pathToFileURL(previewPath).href, import.meta.url);
+    const png = await renderPreview(resolve(dirname(chartPath), "data.json"));
+    await writeFile(join(outputDirectory, `${name}.png`), png);
+  }
 }
