@@ -1,6 +1,6 @@
 import { constants } from "node:fs";
 import { lstat, open, readdir, realpath, rename, unlink } from "node:fs/promises";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { renderDirectoryListing, renderErrorPage, renderSourceView, type Breadcrumb, type DirectoryEntry } from "./views.tsx";
@@ -27,6 +27,7 @@ const LANGUAGE_BY_EXTENSION: Record<string, string> = {
 // read arbitrarily large files into memory.
 const MAX_TEXT_BYTES = 1024 * 1024;
 const MAX_SAVE_BYTES = MAX_TEXT_BYTES;
+const MAX_SAVE_REQUEST_BYTES = MAX_SAVE_BYTES * 3 + 4096;
 const MAX_PNG_BYTES = 10 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
@@ -34,6 +35,21 @@ const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
   for (let bit = 0; bit < 8; bit++) crc = (crc & 1) ? (0xedb88320 ^ (crc >>> 1)) : (crc >>> 1);
   return crc >>> 0;
 });
+const saveQueues = new Map<string, Promise<void>>();
+
+async function withSaveLock<T>(canonicalPath: string, action: () => Promise<T>): Promise<T> {
+  const previous = saveQueues.get(canonicalPath) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => { release = resolve; });
+  saveQueues.set(canonicalPath, current);
+  await previous;
+  try {
+    return await action();
+  } finally {
+    release();
+    if (saveQueues.get(canonicalPath) === current) saveQueues.delete(canonicalPath);
+  }
+}
 
 export function languageForFilename(filename: string): string {
   return LANGUAGE_BY_EXTENSION[path.extname(filename).toLowerCase()] ?? "plaintext";
@@ -57,7 +73,7 @@ async function readTextFile(filePath: string): Promise<string | null> {
 
     let text: string;
     try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, length));
+      text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(buffer.subarray(0, length));
     } catch {
       return null;
     }
@@ -170,7 +186,8 @@ export function createFileBrowserMiddleware(
 ) {
   const root = path.resolve(rootDirectory);
   const csrfSecret = randomBytes(32);
-  const csrf = (file: string) => createHash("sha256").update(csrfSecret).update(file).digest("hex");
+  const csrfCookie = randomBytes(32).toString("hex");
+  const csrf = (file: string) => createHmac("sha256", csrfSecret).update(file).digest("hex");
 
   return async (req: IncomingMessage, res: ServerResponse, next: (error?: unknown) => void) => {
     const target = req.url ?? "/";
@@ -218,8 +235,9 @@ export function createFileBrowserMiddleware(
         const tokenHeader = req.headers["x-pages-csrf-token"];
         const expected = csrf(relative);
         const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
-        const validToken = !!cookie && !!token && cookie === expected && token === expected
-          && timingSafeEqual(Buffer.from(cookie), Buffer.from(expected));
+        const validToken = !!cookie && !!token && cookie === csrfCookie && token === expected
+          && timingSafeEqual(Buffer.from(cookie), Buffer.from(csrfCookie))
+          && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
         const origin = req.headers.origin;
         const host = req.headers["x-forwarded-host"]?.toString().split(",")[0]?.trim() ?? req.headers.host;
         const proto = req.headers["x-forwarded-proto"]?.toString().split(",")[0]?.trim()
@@ -237,7 +255,7 @@ export function createFileBrowserMiddleware(
         for await (const chunk of req) {
           const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
           received += buffer.length;
-          if (received > MAX_SAVE_BYTES + 4096) {
+          if (received > MAX_SAVE_REQUEST_BYTES) {
             res.statusCode = 413;
             return res.end();
           }
@@ -246,56 +264,99 @@ export function createFileBrowserMiddleware(
         let payload: { content?: unknown; hash?: unknown };
         try { payload = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
         catch { return htmlResponse(res, 400, renderErrorPage(400, "Invalid save request"), false); }
+        if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+          return htmlResponse(res, 400, renderErrorPage(400, "Invalid save request"), false);
+        }
         if (typeof payload.content !== "string" || Buffer.byteLength(payload.content, "utf8") > MAX_SAVE_BYTES
           || typeof payload.hash !== "string" || !/^[a-f0-9]{64}$/.test(payload.hash)
           || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(payload.content)) {
           return htmlResponse(res, 400, renderErrorPage(400, "Invalid Markdown content"), false);
         }
-        // Refuse symlinks in every path component, then pin the file identity
-        // through an O_NOFOLLOW descriptor and compare its content hash.
-        let current = root;
-        for (const segment of segments) {
-          current = path.join(current, segment);
-          const part = await lstat(current);
-          if (part.isSymbolicLink()) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), false);
-        }
-        const target = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-        const stat = await target.stat();
-        if (!stat.isFile() || stat.size > MAX_SAVE_BYTES) {
-          await target.close();
-          return htmlResponse(res, 415, renderErrorPage(415, "File cannot be saved"), false);
-        }
-        const old = await target.readFile();
-        const oldHash = createHash("sha256").update(old).digest("hex");
-        if (oldHash !== payload.hash) {
-          await target.close();
-          res.statusCode = 409;
-          res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.setHeader("Cache-Control", "no-store");
-          return res.end(JSON.stringify({ error: "conflict", hash: oldHash }));
-        }
-        const latest = await lstat(targetPath);
-        if (!latest.isFile() || latest.dev !== stat.dev || latest.ino !== stat.ino) {
-          await target.close();
-          return htmlResponse(res, 409, renderErrorPage(409, "File changed; reload before saving"), false);
-        }
-        await target.close();
-        const temporary = path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${randomBytes(12).toString("hex")}.tmp`);
-        try {
-          const replacement = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, stat.mode & 0o777);
-          try { await replacement.writeFile(payload.content, "utf8"); await replacement.sync(); }
-          finally { await replacement.close(); }
-          const check = await lstat(targetPath);
-          if (!check.isFile() || check.dev !== stat.dev || check.ino !== stat.ino) {
-            return htmlResponse(res, 409, renderErrorPage(409, "File changed; reload before saving"), false);
+        const content = payload.content as string;
+        const expectedHash = payload.hash as string;
+        const canonicalRoot = await realpath(root);
+        const canonicalTarget = await realpath(targetPath);
+        const canonicalRelative = path.relative(canonicalRoot, canonicalTarget);
+        if (isOutsideRoot(canonicalRelative)) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), false);
+        const saved = await withSaveLock(canonicalTarget, async () => {
+          // Check again under the per-path lock; simultaneous same-base saves
+          // must serialize before the hash comparison and replacement.
+          let current = root;
+          for (const segment of segments) {
+            current = path.join(current, segment);
+            const part = await lstat(current);
+            if (part.isSymbolicLink()) return { status: 404, error: "Not found" };
           }
-          await rename(temporary, targetPath);
-        } finally { await unlink(temporary).catch(() => {}); }
-        const newHash = createHash("sha256").update(payload.content, "utf8").digest("hex");
-        res.statusCode = 200;
+          const target = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+          try {
+            const stat = await target.stat();
+            if (!stat.isFile() || stat.size > MAX_SAVE_BYTES) return { status: 415, error: "File cannot be saved" };
+            const buffer = Buffer.alloc(MAX_SAVE_BYTES + 1);
+            let length = 0;
+            while (length < buffer.length) {
+              const { bytesRead } = await target.read(buffer, length, buffer.length - length, length);
+              if (bytesRead === 0) break;
+              length += bytesRead;
+            }
+            if (length > MAX_SAVE_BYTES) return { status: 415, error: "File cannot be saved" };
+            const oldHash = createHash("sha256").update(buffer.subarray(0, length)).digest("hex");
+            if (oldHash !== expectedHash) return { status: 409, hash: oldHash };
+            const latest = await lstat(targetPath);
+            if (!latest.isFile() || latest.dev !== stat.dev || latest.ino !== stat.ino) {
+              return { status: 409, error: "File changed; reload before saving" };
+            }
+            const temporary = path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${randomBytes(12).toString("hex")}.tmp`);
+            try {
+              const replacement = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, stat.mode & 0o777);
+              try {
+                await replacement.chmod(stat.mode & 0o777);
+                await replacement.writeFile(content, "utf8");
+                await replacement.sync();
+              }
+              finally { await replacement.close(); }
+              const check = await lstat(targetPath);
+              if (!check.isFile() || check.dev !== stat.dev || check.ino !== stat.ino) {
+                return { status: 409, error: "File changed; reload before saving" };
+              }
+              // Re-read immediately before rename to catch non-cooperating
+              // writers that modify the same inode while the temp file is made.
+              const lateCheck = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+              let lateHash = "";
+              try {
+                const lateStat = await lateCheck.stat();
+                if (!lateStat.isFile() || lateStat.dev !== stat.dev || lateStat.ino !== stat.ino
+                  || lateStat.size > MAX_SAVE_BYTES) {
+                  return { status: 409, error: "File changed; reload before saving" };
+                }
+                const lateBytes = Buffer.alloc(MAX_SAVE_BYTES + 1);
+                let lateLength = 0;
+                while (lateLength < lateBytes.length) {
+                  const { bytesRead } = await lateCheck.read(lateBytes, lateLength, lateBytes.length - lateLength, lateLength);
+                  if (bytesRead === 0) break;
+                  lateLength += bytesRead;
+                }
+                if (lateLength > MAX_SAVE_BYTES) return { status: 409, error: "File changed; reload before saving" };
+                lateHash = createHash("sha256").update(lateBytes.subarray(0, lateLength)).digest("hex");
+              } finally { await lateCheck.close(); }
+              if (lateHash !== expectedHash) return { status: 409, hash: lateHash };
+              await rename(temporary, targetPath);
+            } finally { await unlink(temporary).catch(() => {}); }
+            return { status: 200, hash: createHash("sha256").update(content, "utf8").digest("hex") };
+          } finally {
+            await target.close();
+          }
+        });
+        if (saved.status !== 200) {
+          res.statusCode = saved.status;
+          res.setHeader("Content-Type", saved.status === 409 ? "application/json; charset=utf-8" : "text/html; charset=utf-8");
+          res.setHeader("Cache-Control", "no-store");
+          return res.end(saved.status === 409 ? JSON.stringify({ error: "conflict", hash: saved.hash })
+            : renderErrorPage(saved.status, saved.error ?? "Save failed"));
+        }
+        res.statusCode = saved.status;
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.setHeader("Cache-Control", "no-store");
-        return res.end(JSON.stringify({ hash: newHash }));
+        return res.end(JSON.stringify({ hash: saved.hash }));
       }
       let current = root;
       for (const segment of segments) {
@@ -325,7 +386,7 @@ export function createFileBrowserMiddleware(
         const editToken = editable ? csrf(relative) : undefined;
         const sourceHash = createHash("sha256").update(text, "utf8").digest("hex");
         if (editToken) {
-          res.setHeader("Set-Cookie", `pages_edit_csrf=${editToken}; Path=${ROUTE}/; SameSite=Strict; HttpOnly`);
+          res.setHeader("Set-Cookie", `pages_edit_csrf=${csrfCookie}; Path=${ROUTE}/; SameSite=Strict; HttpOnly`);
         }
         return htmlResponse(res, 200, renderSourceView({
           name,

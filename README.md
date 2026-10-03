@@ -25,9 +25,17 @@ highlighting, line wrapping, undo/redo, and search. Saving is always explicit
 (Save or Ctrl/Cmd-S); there is no autosave or rendered Markdown preview in the
 editor. Saves are limited to 1 MiB, require the page's same-origin CSRF token,
 and use a content hash to reject stale edits instead of overwriting concurrent
-changes. Replacement is atomic. If a dev-server reload or navigation is
+changes. Saves in the preview process are serialized per canonical file path,
+and the current hash is checked again immediately before replacement.
+Replacement is atomic. This prevents concurrent editor saves in this server
+from both succeeding and narrows races with external writers; a separate
+process can still write in the small interval between the final hash check and
+filesystem rename because ordinary path-based filesystem APIs do not provide
+a cross-process compare-and-swap. If a dev-server reload or navigation is
 attempted with edits, the browser warns; the tab also keeps a session-only draft
-so an accepted live reload can restore the unsaved text. Cancel discards it.
+so an accepted live reload can restore the unsaved text. The draft records the
+source hash it was based on; drafts from stale or unknown versions are
+preserved but cannot be saved until explicitly reloaded. Cancel discards it.
 If another process changes the file, the editor preserves the draft and offers
 an explicit reload-from-disk action.
 

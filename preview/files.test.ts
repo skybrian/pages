@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer, request } from "node:http";
@@ -55,6 +55,9 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, ".gitignore"), "node_modules/\n");
     await writeFile(path.join(root, "sample.ts"), "const answer: number = 42;");
     await writeFile(path.join(root, "src", "pages", "published.md"), "# Published page");
+    await writeFile(path.join(root, "src", "pages", "second.markdown"), "# Second page");
+    await writeFile(path.join(root, "concurrent.md"), "base");
+    await writeFile(path.join(root, "bom.markdown"), Buffer.from("\uFEFF# BOM file\r\n", "utf8"));
     await writeFile(path.join(root, "src", "pages", "chart.ts"), "export const chart = true;");
     await writeFile(path.join(root, "unknown.xyz"), "<not markup>");
     await writeFile(path.join(root, "binary.txt"), Buffer.from([0x41, 0x00, 0x42]));
@@ -324,10 +327,59 @@ describe("preview file browser", () => {
     assert.equal(saved.status, 200);
     assert.deepEqual(await import("node:fs/promises").then(({ readFile }) => readFile(path.join(root, "src/pages/published.md"))), Buffer.from("## saved\r\nline\n"));
     assert.equal((await send({ content: "x", hash: hash("## saved\r\nline\n") })).status, 200);
+    const secondPage = await fetch(`${origin}/admin/files/src/pages/second.markdown`);
+    const secondHtml = await secondPage.text();
+    const secondToken = secondHtml.match(/name="pages-edit-token" content="([a-f0-9]{64})"/)?.[1];
+    assert.ok(secondToken);
+    const secondCookie = secondPage.headers.get("set-cookie")?.match(/pages_edit_csrf=([a-f0-9]{64})/)?.[1];
+    assert.equal(secondCookie, cookie, "a second editor tab retains the session-wide CSRF cookie");
+    const crossTabSave = await fetch(`${origin}/admin/files/src/pages/second.markdown`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `pages_edit_csrf=${cookie}`,
+        "x-pages-csrf-token": secondToken! },
+      body: JSON.stringify({ content: "# Second saved", hash: hash("# Second page") }),
+    });
+    assert.equal(crossTabSave.status, 200);
+
+    const concurrentPage = await fetch(`${origin}/admin/files/concurrent.md`);
+    const concurrentHtml = await concurrentPage.text();
+    const concurrentToken = concurrentHtml.match(/name="pages-edit-token" content="([a-f0-9]{64})"/)?.[1];
+    assert.ok(concurrentToken);
+    const concurrentCookie = concurrentPage.headers.get("set-cookie")?.match(/pages_edit_csrf=([a-f0-9]{64})/)?.[1];
+    const concurrentSave = (content: string) => fetch(`${origin}/admin/files/concurrent.md`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `pages_edit_csrf=${concurrentCookie}`,
+        "x-pages-csrf-token": concurrentToken! },
+      body: JSON.stringify({ content, hash: hash("base") }),
+    });
+    const concurrentResults = await Promise.all([concurrentSave("first"), concurrentSave("second")]);
+    assert.deepEqual(concurrentResults.map(({ status }) => status).sort(), [200, 409]);
+
+    const largeEscaped = "\t".repeat(600_000);
+    const currentConcurrent = await readFile(path.join(root, "concurrent.md"), "utf8");
+    const escapedSave = await fetch(`${origin}/admin/files/concurrent.md`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `pages_edit_csrf=${concurrentCookie}`,
+        "x-pages-csrf-token": concurrentToken! },
+      body: JSON.stringify({ content: largeEscaped, hash: hash(currentConcurrent) }),
+    });
+    assert.equal(escapedSave.status, 200, "valid content with JSON escaping can exceed the decoded-content limit");
+    assert.deepEqual(await readFile(path.join(root, "concurrent.md")), Buffer.from(largeEscaped));
     assert.equal((await fetch(`${origin}/admin/files/sample.ts`, { method: "POST" })).status, 405);
     assert.equal((await fetch(`${origin}/admin/files/src/pages/missing.md`, {
       method: "POST", headers: { "content-type": "application/json" }, body: "{}",
     })).status, 403);
+  });
+
+  it("keeps a leading UTF-8 BOM in the source and hashes the original bytes", async () => {
+    const original = await readFile(path.join(root, "bom.markdown"));
+    const response = await fetch(`${origin}/admin/files/bom.markdown`);
+    const html = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(html, new RegExp(`name="pages-source-hash" content="${createHash("sha256").update(original).digest("hex")}"`));
+    const encoded = html.match(/id="markdown-editor" data-source="([^"]+)"/)?.[1];
+    assert.ok(encoded);
+    assert.deepEqual(Buffer.from(encoded!, "base64"), original);
   });
 
   it("returns 404 for missing paths and falls through outside the route boundary", async () => {
