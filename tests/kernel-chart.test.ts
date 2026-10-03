@@ -14,6 +14,7 @@ it("uses the requested title and keeps only the chart card", () => {
   assert.match(page, new RegExp(`<title>${requestedTitle}</title>`));
   assert.match(page, new RegExp(`<h1 class="chart-heading" id="chart-heading">${requestedTitle}</h1>`));
   assert.doesNotMatch(page, /^description:|chart-subtitle|release-range/m);
+  assert.doesNotMatch(page, /<meta[^>]*(?:name="description"|property="og:description")/);
   const outsideCard = page.split('<article class="chart-card"')[0] + page.split("</article>")[1];
   assert.doesNotMatch(outsideCard, /<nav\\b|<header\\b|<footer\\b|class="method"/);
 });
