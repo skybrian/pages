@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import { buildSync } from "esbuild";
 import { runInNewContext } from "node:vm";
 import { it } from "node:test";
+import { JSDOM } from "jsdom";
+import { createChart } from "../src/pages/2026/kernel-cve-fixes/plot.ts";
 
 const chartPath = "src/pages/2026/kernel-cve-fixes/chart.ts";
 const page = await readFile("src/pages/2026/kernel-cve-fixes/index.html", "utf8");
@@ -45,6 +47,26 @@ function dataset(releases: Row[]) {
     releases,
   };
 }
+
+it("omits axis titles in preview plots while retaining ticks and browser labels", () => {
+  const dom = new JSDOM();
+  try {
+    const data = dataset([{ version: "6.9", count: 200 }, { version: "7.2", count: 400 }]);
+    for (const axisLabels of [false, true]) {
+      const plot = createChart(data, {
+        document: dom.window.document, width: 1120, interactive: false, axisLabels,
+      });
+      const text = [...plot.querySelectorAll("text")].map(node => node.textContent).join(" ");
+      assert.equal(text.includes("Mainline kernel release"), axisLabels);
+      assert.equal(text.includes("Published CVE records with fixes"), axisLabels);
+      assert.match(text, /6\.9/);
+      assert.match(text, /7\.2/);
+      assert.match(text, /400/);
+    }
+  } finally {
+    dom.window.close();
+  }
+});
 
 async function runChart(releases: Row[], initialWidth: number) {
   let width = initialWidth;
