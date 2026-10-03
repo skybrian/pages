@@ -2,6 +2,7 @@ import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { searchKeymap, search, highlightSelectionMatches } from "@codemirror/search";
 import { history, historyKeymap } from "@codemirror/commands";
+import { EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 const button = document.querySelector<HTMLButtonElement>("#edit-markdown");
@@ -80,6 +81,7 @@ button?.addEventListener("click", () => {
     doc: initial,
     extensions: [
       basicSetup, markdown(), history(), search(), highlightSelectionMatches(),
+      EditorState.lineSeparator.of(source.includes("\r\n") ? "\r\n" : "\n"),
       EditorView.lineWrapping, keymap.of([...historyKeymap, ...searchKeymap]),
       EditorView.theme({
         "&": { border: "1px solid #8c959f", borderRadius: "6px", fontSize: "14px" },

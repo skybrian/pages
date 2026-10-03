@@ -9,8 +9,8 @@ emitting files. To run the build, use `npm run build`.
 
 When running the preview server with `npm run dev`, open
 `/admin/files/` to browse the current worktree. This browser is registered only
-in Eleventy's serve mode; production builds do not emit admin pages. It is
-read-only and blocks symlinks rather than following them. Detected UTF-8 text
+in Eleventy's serve mode; production builds do not emit admin pages or editor
+assets. It blocks symlinks rather than following them. Detected UTF-8 text
 files are displayed as escaped text in a separate HTML page; binary, invalid
 UTF-8, and non-regular files are not linked. Text previews are limited to
 1 MiB. Valid PNG files up to 10 MiB are served as images and their links open
@@ -18,6 +18,24 @@ in a new browser tab; PNG content is checked rather than trusting the filename.
 Other binary files and files exceeding their limits are not previewed or served.
 Supported source extensions are syntax highlighted with MicroLighter;
 unrecognized text extensions remain plain text.
+
+Existing `.md` and `.markdown` files have an **Edit** button. The preview-only
+CodeMirror 6 editor is bundled locally with esbuild and provides Markdown
+highlighting, line wrapping, undo/redo, and search. Saving is always explicit
+(Save or Ctrl/Cmd-S); there is no autosave or rendered Markdown preview in the
+editor. Saves are limited to 1 MiB, require the page's same-origin CSRF token,
+and use a content hash to reject stale edits instead of overwriting concurrent
+changes. Replacement is atomic. If a dev-server reload or navigation is
+attempted with edits, the browser warns; the tab also keeps a session-only draft
+so an accepted live reload can restore the unsaved text. Cancel discards it.
+If another process changes the file, the editor preserves the draft and offers
+an explicit reload-from-disk action.
+
+For a quick workflow check, run `npm run dev`, open a Markdown source page from
+`/admin/files/`, enter Edit, make a change, and use Save. Verify a second edit
+followed by Cancel restores the saved source, and that an external edit causes
+a conflict rather than silent replacement. The ordinary file view and the
+generated page's Source ribbon remain available.
 
 Preview-only server-rendered pages can be authored as `.tsx` files under
 `preview/`. The preview config loads their TypeScript entry points with the
