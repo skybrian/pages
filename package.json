@@ -28,6 +28,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-markdown": "^6.5.2",
     "@codemirror/search": "^6.7.2",
     "codemirror": "^6.0.2"

@@ -46,15 +46,17 @@ export default async function (eleventyConfig) {
   eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
 
   if (process.env.ELEVENTY_RUN_MODE === "serve") {
-    const [{ tsImport }, { createMicrolighterAssetsMiddleware }] = await Promise.all([
+    const [{ tsImport }, { createMicrolighterAssetsMiddleware }, { createEditorAssetsMiddleware }] = await Promise.all([
       import("tsx/esm/api"),
       import("./preview/microlighter-assets.ts"),
+      import("./preview/editor-assets.ts"),
     ]);
     /** @type {Promise<{ createFileBrowserMiddleware: typeof import("./preview/files.ts").createFileBrowserMiddleware }>} */
     const fileBrowserModule = tsImport("./preview/files.ts", { parentURL: import.meta.url });
     const { createFileBrowserMiddleware } = await fileBrowserModule;
     eleventyConfig.setServerOptions({
       middleware: [
+        createEditorAssetsMiddleware(),
         createMicrolighterAssetsMiddleware(fileURLToPath(new URL(".", import.meta.url))),
         createFileBrowserMiddleware(fileURLToPath(new URL(".", import.meta.url)), previewUrls.resolve),
       ],
