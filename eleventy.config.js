@@ -10,6 +10,7 @@ import { buildChartBundles } from "./scripts/build-charts.js";
  *   on: (event: string, callback: (eventArgs: {
  *     directories: { output: string },
  *     outputMode: string,
+ *     results?: Array<{ inputPath?: string, url?: string | false }>,
  *   }) => Promise<void>) => void,
  *   setServerOptions: (options: { middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
  * }} SiteConfig
@@ -17,19 +18,23 @@ import { buildChartBundles } from "./scripts/build-charts.js";
 
 /** @param {SiteConfig} eleventyConfig */
 export default async function (eleventyConfig) {
-  const { isPreviewRunMode, previewSourceUrl } = await import("./preview/ribbon.js");
+  const { createPreviewUrlLookup, isPreviewRunMode, PREVIEW_RIBBON_STYLES, previewSourceUrl } =
+    await import("./preview/ribbon.js");
   const previewMode = isPreviewRunMode(process.env.ELEVENTY_RUN_MODE);
   eleventyConfig.addGlobalData("previewMode", previewMode);
+  eleventyConfig.addGlobalData("previewRibbonStyles", PREVIEW_RIBBON_STYLES);
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
+  const previewUrls = createPreviewUrlLookup(fileURLToPath(new URL(".", import.meta.url)));
 
   // Chart TS is bundled after Eleventy has written the site's output.
   eleventyConfig.addWatchTarget("src/pages/**/*.ts");
   eleventyConfig.addWatchTarget("src/pages/**/data.json");
   eleventyConfig.addWatchTarget("src/charts/**/*.ts");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
-  eleventyConfig.on("eleventy.after", ({ directories, outputMode }) =>
-    buildChartBundles({ siteOutputDirectory: directories.output, outputMode }),
-  );
+  eleventyConfig.on("eleventy.after", ({ directories, outputMode, results }) => {
+    previewUrls.refresh(results ?? []);
+    return buildChartBundles({ siteOutputDirectory: directories.output, outputMode });
+  });
 
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   eleventyConfig.addPassthroughCopy({ "src/_redirects": "_redirects" });
@@ -51,7 +56,7 @@ export default async function (eleventyConfig) {
     eleventyConfig.setServerOptions({
       middleware: [
         createMicrolighterAssetsMiddleware(fileURLToPath(new URL(".", import.meta.url))),
-        createFileBrowserMiddleware(fileURLToPath(new URL(".", import.meta.url))),
+        createFileBrowserMiddleware(fileURLToPath(new URL(".", import.meta.url)), previewUrls.resolve),
       ],
     });
   }

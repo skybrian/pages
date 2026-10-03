@@ -7,6 +7,7 @@ import { createServer, request } from "node:http";
 import { after, before, describe, it } from "node:test";
 import { createFileBrowserMiddleware, languageForFilename } from "./files.ts";
 import { createMicrolighterAssetsMiddleware } from "./microlighter-assets.ts";
+import { createPreviewUrlLookup, PREVIEW_RIBBON_STYLES } from "./ribbon.js";
 
 describe("preview file browser", () => {
   let root: string;
@@ -14,6 +15,7 @@ describe("preview file browser", () => {
   let server: ReturnType<typeof createServer>;
   let origin: string;
   let fileMiddleware: ReturnType<typeof createFileBrowserMiddleware>;
+  let previewUrls: ReturnType<typeof createPreviewUrlLookup>;
   let assetsMiddleware: ReturnType<typeof createMicrolighterAssetsMiddleware>;
 
   function rawGet(requestPath: string, method = "GET"): Promise<{ status: number; headers: Headers; body: string }> {
@@ -45,11 +47,14 @@ describe("preview file browser", () => {
     await mkdir(path.join(root, "nested"));
     await mkdir(path.join(root, "crumb & <folder>"));
     await mkdir(path.join(root, "..notes"));
+    await mkdir(path.join(root, "src", "pages"), { recursive: true });
     await writeFile(path.join(root, ".hidden"), "hidden");
     await writeFile(path.join(root, "nested", "hello <&.html"), "<script>alert('x')</script>");
     await writeFile(path.join(root, "README"), "plain UTF-8: café");
     await writeFile(path.join(root, ".gitignore"), "node_modules/\n");
     await writeFile(path.join(root, "sample.ts"), "const answer: number = 42;");
+    await writeFile(path.join(root, "src", "pages", "published.md"), "# Published page");
+    await writeFile(path.join(root, "src", "pages", "chart.ts"), "export const chart = true;");
     await writeFile(path.join(root, "unknown.xyz"), "<not markup>");
     await writeFile(path.join(root, "binary.txt"), Buffer.from([0x41, 0x00, 0x42]));
     await writeFile(path.join(root, "invalid-utf8.txt"), Buffer.from([0xc3, 0x28]));
@@ -67,7 +72,12 @@ describe("preview file browser", () => {
     await writeFile(path.join(outside, "secret.png"), png);
     await symlink(outside, path.join(root, "escape"));
     await symlink(path.join(outside, "secret.png"), path.join(root, "linked.png"));
-    fileMiddleware = createFileBrowserMiddleware(root);
+    previewUrls = createPreviewUrlLookup(root);
+    previewUrls.refresh([
+      { inputPath: path.join(root, "src/pages/published.md"), url: "/custom/published/" },
+      { inputPath: path.join(root, "src/pages/chart.ts"), url: false },
+    ]);
+    fileMiddleware = createFileBrowserMiddleware(root, previewUrls.resolve);
     assetsMiddleware = createMicrolighterAssetsMiddleware(path.resolve("."));
     server = createServer((req, res) => {
       void assetsMiddleware(req, res, (assetError) => {
@@ -146,6 +156,19 @@ describe("preview file browser", () => {
     assert.match(bodyStyles(listing)!, /max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px\/1\.6/);
     for (const html of [listing, source]) {
       assert.match(html, /name="viewport" content="width=device-width,initial-scale=1"/);
+    }
+  });
+
+  it("offers the shared Source ribbon only for generated page source files", async () => {
+    const pageSource = await (await fetch(`${origin}/admin/files/src/pages/published.md`)).text();
+    assert.match(pageSource, /class="preview-ribbon" href="\/custom\/published\/" aria-label="Source view: return to preview page">Source<\/a>/);
+    assert.ok(pageSource.includes(PREVIEW_RIBBON_STYLES));
+
+    for (const sourcePath of ["README", "sample.ts", "src/pages/chart.ts"]) {
+      const response = await fetch(`${origin}/admin/files/${sourcePath}`);
+      const body = await response.text();
+      assert.equal(response.status, 200);
+      assert.doesNotMatch(body, /preview-ribbon/);
     }
   });
 

@@ -1,5 +1,6 @@
 import { Fragment, type ComponentChildren } from "preact";
 import { renderDocument } from "./render.tsx";
+import { PREVIEW_RIBBON_STYLES } from "./ribbon.js";
 
 const ASSET_ROUTE = "/admin/assets/microlighter";
 const PAGE_STYLES = "body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#24292f}ul{list-style:none;padding-left:0}";
@@ -82,14 +83,20 @@ export function SourceView({
   breadcrumbs,
   language,
   source,
+  previewUrl,
 }: {
   name: string;
   breadcrumbs: Breadcrumb[];
   language: string;
   source: string;
+  previewUrl?: string;
 }) {
   return (
     <PageLayout title={name} sourceView>
+      {previewUrl && <>
+        <a class="preview-ribbon" href={previewUrl} aria-label="Source view: return to preview page">Source</a>
+        <style>{PREVIEW_RIBBON_STYLES}</style>
+      </>}
       <h1>{name}</h1>
       <Breadcrumbs items={[...breadcrumbs, { label: name }]} />
 

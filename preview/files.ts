@@ -162,7 +162,10 @@ function breadcrumbs(segments: string[]): Breadcrumb[] {
  * Preview-only, read-only browser. Symlinks are deliberately not traversed or
  * offered as links, keeping every accessible object inside the configured root.
  */
-export function createFileBrowserMiddleware(rootDirectory: string) {
+export function createFileBrowserMiddleware(
+  rootDirectory: string,
+  resolvePreviewUrl?: (sourcePath: string) => string | undefined,
+) {
   const root = path.resolve(rootDirectory);
 
   return async (req: IncomingMessage, res: ServerResponse, next: (error?: unknown) => void) => {
@@ -229,6 +232,7 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
 
           language,
           source: text,
+          previewUrl: resolvePreviewUrl?.(path.relative(root, targetPath)),
         }), head);
       }
       if (!stat.isDirectory()) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), head);

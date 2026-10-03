@@ -1,17 +1,4 @@
 {% if previewMode %}
 <a class="preview-ribbon" href="{{ page.inputPath | previewSourceUrl }}" aria-label="Preview mode: view source for this page">Preview</a>
-<style>
-  .preview-ribbon {
-    position: fixed; z-index: 10; top: 1.5rem; right: -3.2rem;
-    width: 11rem; padding: .35rem 0; transform: rotate(45deg);
-    background: #8b2525; color: #fff; text-align: center;
-    font: 600 .875rem/1.4 system-ui, sans-serif; text-decoration: none;
-    box-shadow: 0 2px 6px #0005;
-  }
-  .preview-ribbon:focus-visible { outline: 3px solid #ffda5c; outline-offset: 3px; }
-  @media (max-width: 480px) {
-    .preview-ribbon { top: 1rem; right: -3.6rem; width: 10rem; font-size: .75rem; }
-  }
-  @media print { .preview-ribbon { display: none; } }
-</style>
+<style>{{ previewRibbonStyles | safe }}</style>
 {% endif %}
