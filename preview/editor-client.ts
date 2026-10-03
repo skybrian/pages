@@ -16,19 +16,12 @@ const decodeSource = () => {
   const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
   return new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
 };
-const encodeSource = (text: string) => {
-  const bytes = new TextEncoder().encode(text);
-  let binary = "";
-  for (let start = 0; start < bytes.length; start += 32_768) {
-    binary += String.fromCharCode(...bytes.subarray(start, start + 32_768));
-  }
-  return btoa(binary);
-};
 const source = decodeSource();
 let saved = source;
 let conflict = false;
 let saving = false;
 let discardDraftForReload = false;
+let draftBaseHash: string | undefined = hash;
 const hasMixedLineEndings = /(?<!\r)\n/u.test(source) && source.includes("\r\n")
   || /(^|[^\r])\r(?!\n)/u.test(source);
 const status = document.querySelector<HTMLElement>("#editor-status");
@@ -40,12 +33,12 @@ let editor: EditorView | undefined;
 const setStatus = (text: string) => { if (status) status.textContent = text; };
 const lineSeparator = source.includes("\r\n") ? "\r\n" : "\n";
 const serialize = () => editor
-  ? editor.state.doc.sliceString(0, editor.state.doc.length, editor.state.facet(EditorState.lineSeparator) || lineSeparator)
+  ? editor.state.sliceDoc()
   : source;
 const dirty = () => !!editor && serialize() !== saved;
 const persistDraft = () => {
   try {
-    if (dirty()) sessionStorage.setItem(draftKey, JSON.stringify({ content: serialize(), baseHash: hash }));
+    if (dirty()) sessionStorage.setItem(draftKey, JSON.stringify({ content: serialize(), baseHash: draftBaseHash }));
     else sessionStorage.removeItem(draftKey);
   } catch { /* Storage can be disabled; the unload warning still protects edits. */ }
 };
@@ -71,23 +64,24 @@ const save = async () => {
     if (response.status === 409) {
       conflict = true;
       if (reloadButton) reloadButton.hidden = false;
+      if (saveButton) saveButton.disabled = true;
       setStatus("The file changed on disk. Your edits are preserved; reload to discard them.");
       return;
     }
     if (!response.ok) throw new Error(`Save failed (${response.status})`);
     const result = await response.json() as { hash: string };
     hash = result.hash;
+    draftBaseHash = result.hash;
     saved = submittedContent;
     const code = document.querySelector("pre code");
     if (code) code.textContent = submittedContent;
-    if (panel) panel.dataset.source = encodeSource(submittedContent);
     persistDraft();
     setStatus(dirty() ? "Saved submitted version; newer edits are still unsaved." : "Saved.");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Save failed.");
   } finally {
     saving = false;
-    if (saveButton) saveButton.disabled = false;
+    if (saveButton) saveButton.disabled = hasMixedLineEndings || conflict;
     if (cancelButton) cancelButton.disabled = false;
   }
 };
@@ -112,6 +106,7 @@ button?.addEventListener("click", () => {
       } catch { content = rawDraft; }
       if (content !== source) {
         initial = content;
+        draftBaseHash = baseHash;
         if (!baseHash || baseHash !== hash) {
           conflict = true;
           if (reloadButton) reloadButton.hidden = false;
@@ -124,12 +119,17 @@ button?.addEventListener("click", () => {
       }
     }
   } catch { /* Continue with disk contents. */ }
+  if (hasMixedLineEndings && !conflict) {
+    setStatus("This file has mixed line endings. Saving is disabled to preserve them; normalize line endings outside the editor before saving.");
+  }
+  if (saveButton) saveButton.disabled = hasMixedLineEndings || conflict;
   editor ??= new EditorView({
     parent: host,
     doc: initial,
     extensions: [
       basicSetup, markdown(), history(), search(), highlightSelectionMatches(),
       EditorState.lineSeparator.of(source.includes("\r\n") ? "\r\n" : "\n"),
+      EditorView.contentAttributes.of({ "aria-label": "Markdown source editor" }),
       EditorView.lineWrapping, keymap.of([...historyKeymap, ...searchKeymap]),
       EditorView.theme({
         "&": { border: "1px solid #8c959f", borderRadius: "6px", fontSize: "14px" },
@@ -154,6 +154,10 @@ cancelButton?.addEventListener("click", () => {
   if (dirty() && !window.confirm("Discard your unsaved Markdown edits?")) return;
   try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
   if (editor) editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: saved } });
+  conflict = false;
+  draftBaseHash = hash;
+  if (reloadButton) reloadButton.hidden = true;
+  if (saveButton) saveButton.disabled = hasMixedLineEndings;
   if (panel) panel.hidden = true;
   if (button) button.hidden = false;
   document.querySelector("pre")?.removeAttribute("hidden");
