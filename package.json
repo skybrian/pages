@@ -6,14 +6,17 @@
     "build": "eleventy",
     "dev": "eleventy --serve",
     "test": "node --import tsx --test preview/*.test.ts preview/*.test.tsx tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "update:kernel-cves": "tsx src/pages/2026/kernel-cve-fixes/update-data.ts"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
     "@11ty/eleventy": "3.1.6",
+    "@observablehq/plot": "0.6.17",
     "@types/node": "^22.20.5",
+    "esbuild": "0.28.2",
     "microlighter": "^2.2.0",
     "preact": "^11.0.0",
     "preact-render-to-string": "^6.8.0",

@@ -1,15 +1,22 @@
 import { fileURLToPath } from "node:url";
+import { buildChartBundles } from "./scripts/build-charts.js";
 
 /**
  * @typedef {{
  *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
  *   addFilter: (name: string, callback: (date: Date) => string) => void,
+ *   addWatchTarget: (target: string) => void,
+ *   on: (event: string, callback: () => Promise<void>) => void,
  *   setServerOptions: (options: { middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
  * }} SiteConfig
  */
 
 /** @param {SiteConfig} eleventyConfig */
 export default async function (eleventyConfig) {
+  // Chart TS is bundled after Eleventy has written the site's output.
+  eleventyConfig.addWatchTarget("src/pages/**/chart.ts");
+  eleventyConfig.on("afterBuild", buildChartBundles);
+
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   eleventyConfig.addPassthroughCopy({ "src/_redirects": "_redirects" });
   // Keep referenced post images alongside each page's generated HTML.
