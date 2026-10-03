@@ -4,7 +4,8 @@ import { buildChartBundles } from "./scripts/build-charts.js";
 /**
  * @typedef {{
  *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
- *   addFilter: (name: string, callback: (date: Date) => string) => void,
+ *   addFilter: (name: string, callback: (...values: any[]) => string) => void,
+ *   addGlobalData: (name: string, value: unknown) => void,
  *   addWatchTarget: (target: string) => void,
  *   on: (event: string, callback: (eventArgs: {
  *     directories: { output: string },
@@ -16,6 +17,11 @@ import { buildChartBundles } from "./scripts/build-charts.js";
 
 /** @param {SiteConfig} eleventyConfig */
 export default async function (eleventyConfig) {
+  const { isPreviewRunMode, previewSourceUrl } = await import("./preview/ribbon.js");
+  const previewMode = isPreviewRunMode(process.env.ELEVENTY_RUN_MODE);
+  eleventyConfig.addGlobalData("previewMode", previewMode);
+  eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
+
   // Chart TS is bundled after Eleventy has written the site's output.
   eleventyConfig.addWatchTarget("src/pages/**/*.ts");
   eleventyConfig.addWatchTarget("src/pages/**/data.json");
