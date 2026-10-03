@@ -6,6 +6,15 @@ import { it } from "node:test";
 
 const chartPath = "src/pages/2026/kernel-cve-fixes/chart.ts";
 const source = await readFile(chartPath, "utf8");
+const page = await readFile("src/pages/2026/kernel-cve-fixes/index.html", "utf8");
+const requestedTitle = "A chart of CSVs fixed by Linux kernel releases";
+it("uses the requested title and keeps only the chart card", () => {
+  assert.match(page, new RegExp(`^title: ${requestedTitle.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`, "m"));
+  assert.match(page, new RegExp(`<title>${requestedTitle}</title>`));
+  assert.match(page, new RegExp(`<h1 class="chart-heading" id="chart-heading">${requestedTitle}</h1>`));
+  const outsideCard = page.split('<article class="chart-card"')[0] + page.split("</article>")[1];
+  assert.doesNotMatch(outsideCard, /<nav\\b|<header\\b|<footer\\b|class="method"/);
+});
 const compiled = buildSync({
   stdin: { contents: source, loader: "ts", resolveDir: process.cwd() },
   bundle: false,
