@@ -59,10 +59,19 @@ async function runChart(releases: Row[], initialWidth: number) {
     classList: { add() {} },
   };
   const releaseRange = { textContent: "" };
+  const provenance = {
+    textContent: "",
+    replaceChildren(...children: Array<string | { textContent: string }>) {
+      this.textContent = children.map((child) =>
+        typeof child === "string" ? child : child.textContent).join("");
+    },
+  };
   const document = {
+    createElement() { return { textContent: "", href: "", rel: "" }; },
     querySelector(selector: string) {
       if (selector === "#chart") return chart;
       if (selector === "#release-range") return releaseRange;
+      if (selector === "#provenance") return provenance;
       return null;
     },
   };
@@ -112,6 +121,7 @@ async function runChart(releases: Row[], initialWidth: number) {
   return {
     plots,
     releaseRange,
+    provenance,
     get fetchCalls() { return fetchCalls; },
     resize: async (newWidth: number) => {
       width = newWidth;
@@ -149,6 +159,10 @@ it("renders sorted categorical releases with a finite y-domain and responsive ti
     "Linux 6.10\n4 published CVE records with fixes",
   );
   assert.equal(chart.releaseRange.textContent, "Linux 6.9–7.2");
+  assert.equal(
+    chart.provenance.textContent,
+    "Source: Linux kernel security vulnerability repository. Source commit aaaaaaaaaaaa.",
+  );
 
   await chart.resize(900);
   assert.equal(chart.plots.length, 2);
