@@ -30,7 +30,7 @@ describe("year-based page URLs", () => {
       ], { env: { ...process.env, ELEVENTY_RUN_MODE: "build" } });
 
       const homepage = await readFile(path.join(output, "index.html"), "utf8");
-      for (const slug of ["anthropic-run-rates", "flux3-image-test", "japanese-financial-assets-abroad", "us-households-by-income-band"]) {
+      for (const slug of ["anthropic-run-rates", "flux3-image-test", "japanese-financial-assets-abroad", "us-households-by-income-band", "kernel-cve-fixes"]) {
         assert.ok(homepage.includes(`href="/2026/${slug}/"`));
         assert.ok((await stat(path.join(output, "2026", slug, "index.html"))).isFile());
         await assert.rejects(stat(path.join(output, slug)), { code: "ENOENT" });
@@ -51,6 +51,18 @@ describe("year-based page URLs", () => {
         await readFile(path.join(output, "assets/vendor/d3.v7.9.0.min.js")),
         await readFile("src/assets/vendor/d3.v7.9.0.min.js"),
       );
+      const chartPage = path.join(output, "2026/kernel-cve-fixes");
+      assert.deepEqual(
+        await readFile(path.join(chartPage, "data.json")),
+        await readFile("src/pages/2026/kernel-cve-fixes/data.json"),
+      );
+      const chartHtml = await readFile(path.join(chartPage, "index.html"), "utf8");
+      assert.match(chartHtml, /type="module"\s+src="\/assets\/charts\/kernel-cve-fixes\.js"/);
+      assert.match(chartHtml, /href="\.\/data\.json"/);
+      assert.ok((await stat(path.join(output, "assets/charts/kernel-cve-fixes.js"))).size > 0);
+      for (const script of ["chart.ts", "update-data.ts"]) {
+        await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
+      }
       const redirects = await readFile(path.join(output, "_redirects"), "utf8");
       assert.equal(redirects, await readFile("src/_redirects", "utf8"));
       for (const slug of ["anthropic-run-rates", "flux3-image-test"]) {
