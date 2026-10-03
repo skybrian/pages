@@ -323,6 +323,7 @@ export function createFileBrowserMiddleware(
         const language = languageForFilename(name);
         const editable = [".md", ".markdown"].includes(path.extname(name).toLowerCase());
         const editToken = editable ? csrf(relative) : undefined;
+        const sourceHash = createHash("sha256").update(text, "utf8").digest("hex");
         if (editToken) {
           res.setHeader("Set-Cookie", `pages_edit_csrf=${editToken}; Path=${ROUTE}/; SameSite=Strict; HttpOnly`);
         }
@@ -334,6 +335,8 @@ export function createFileBrowserMiddleware(
           source: text,
           editable,
           editToken,
+          sourceHash,
+          sourceEncoded: Buffer.from(text, "utf8").toString("base64"),
           previewUrl: resolvePreviewUrl?.(path.relative(root, targetPath)),
         }), head);
       }

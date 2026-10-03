@@ -86,6 +86,8 @@ export function SourceView({
   previewUrl,
   editable = false,
   editToken,
+  sourceHash,
+  sourceEncoded,
 }: {
   name: string;
   breadcrumbs: Breadcrumb[];
@@ -94,6 +96,8 @@ export function SourceView({
   previewUrl?: string;
   editable?: boolean;
   editToken?: string;
+  sourceHash?: string;
+  sourceEncoded?: string;
 }) {
   return (
     <PageLayout title={name} sourceView>
@@ -105,15 +109,17 @@ export function SourceView({
       <Breadcrumbs items={[...breadcrumbs, { label: name }]} />
 
       {editable && <button id="edit-markdown" type="button">Edit</button>}
-      {editable && <div id="markdown-editor" hidden>
+      {editable && <div id="markdown-editor" data-source={sourceEncoded} hidden>
         <div id="editor-host" aria-label="Markdown editor" />
         <p>Ctrl/Cmd-S saves. Search with Ctrl/Cmd-F.</p>
         <button id="save-markdown" type="button">Save</button>
         <button id="cancel-markdown" type="button">Cancel</button>
+        <button id="reload-markdown" type="button" hidden>Reload from disk</button>
         <p id="editor-status" role="status" aria-live="polite"></p>
       </div>}
       <pre><code class={`language-${language}`}>{source}</code></pre>
       {editable && editToken && <meta name="pages-edit-token" content={editToken} />}
+      {editable && sourceHash && <meta name="pages-source-hash" content={sourceHash} />}
       {editable && <script type="module" src="/admin/assets/editor/editor.js" />}
       <script type="module" src={`${ASSET_ROUTE}/dist/microlighter.min.js`} />
     </PageLayout>
