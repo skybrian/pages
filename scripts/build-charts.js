@@ -2,9 +2,6 @@ import { readdir, rm } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { build } from "esbuild";
 
-const pagesDirectory = resolve("src/pages");
-const outputDirectory = resolve("_site/assets/charts");
-
 /** @param {string} directory
  * @returns {Promise<Array<[string, string]>>}
  */
@@ -27,8 +24,22 @@ async function findChartEntries(directory) {
   return entries;
 }
 
-export async function buildChartBundles() {
+/**
+ * @param {{
+ *   pagesDirectory?: string,
+ *   siteOutputDirectory?: string,
+ *   outputMode?: string,
+ * }} options
+ */
+export async function buildChartBundles({
+  pagesDirectory = resolve("src/pages"),
+  siteOutputDirectory = "_site",
+  outputMode = "fs",
+} = {}) {
+  if (outputMode !== "fs") return;
+
   const entries = await findChartEntries(pagesDirectory);
+  const outputDirectory = resolve(siteOutputDirectory, "assets/charts");
   await rm(outputDirectory, { recursive: true, force: true });
   if (entries.length === 0) return;
 

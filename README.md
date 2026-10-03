@@ -78,3 +78,45 @@ The post appears on the home page automatically. Clicking the image opens
 the original file. The year and directory name determine the page URL (for example,
 `/2026/my-image-post/`). Referenced post images are copied alongside the generated
 page, while `src/assets/` is reserved for shared site assets such as CSS.
+
+## Observable Plot charts
+
+Keep each chart's browser entry point in `chart.ts` beside its page. Eleventy
+bundles these entries with esbuild during both production builds and preview
+builds. Load `/assets/charts/<page-directory-name>.js` with
+`<script type="module">`. Page directory names must be unique across charts.
+All entries are bundled together, so future charts share dependency chunks.
+Only `chart.ts` is a browser entry point; extraction scripts are not bundled
+or published. Adjacent `data.json` files are published alongside their pages.
+
+### Updating kernel CVE counts
+
+The extraction script lives at
+`src/pages/2026/kernel-cve-fixes/update-data.ts`. After a new mainline release:
+
+```sh
+npm ci
+npm run update:kernel-cves -- --through 7.3
+npm run typecheck
+npm test
+npm run build
+```
+
+Choose the last completed mainline release for `--through`. The script updates
+its private upstream clone under
+`${XDG_CACHE_HOME:-$HOME/.cache}/kernel-cve-fixes/vulns` and regenerates
+`src/pages/2026/kernel-cve-fixes/data.json`. Review and commit that file:
+historical counts may change as upstream records are revised or rejected.
+The JSON records the source commit and its timestamp, not the time of the local
+build. Site builds use the checked-in data and never fetch upstream.
+
+To reproduce a specific snapshot, use a clean upstream checkout at that commit:
+
+```sh
+npm run update:kernel-cves -- --through 7.2 --repo /path/to/vulns
+```
+
+`--repo` reads the checkout without fetching or moving its HEAD. CVEs are
+counted once per release from published records' `.dyad` fix versions; patch
+backports are excluded and release candidates are grouped with their eventual
+mainline release. The explicit cutoff keeps unfinished releases off the chart.

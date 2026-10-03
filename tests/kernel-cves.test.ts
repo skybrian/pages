@@ -15,12 +15,21 @@ test("normalizes mainline rc versions and excludes stable backports", () => {
   assert.throws(() => mainlineVersion("bad", "fixture", 1), /Malformed fixed version/);
 });
 
-test("orders release coverage without inventing 6.20", () => {
+test("uses only observed releases for coverage", () => {
   const result = versionsBetween("6.9", "7.2", new Set(["6.9", "6.12", "7.2"]));
-  assert.deepEqual(result, [
-    "6.9", "6.10", "6.11", "6.12", "6.13", "6.14", "6.15", "6.16",
-    "6.17", "6.18", "6.19", "7.0", "7.1", "7.2",
-  ]);
+  assert.deepEqual(result, ["6.9", "6.12", "7.2"]);
+});
+
+test("includes an observed future-major release without synthesizing versions", () => {
+  const result = versionsBetween("6.9", "8.0", new Set(["6.9", "7.2", "8.0"]));
+  assert.deepEqual(result, ["6.9", "7.2", "8.0"]);
+});
+
+test("rejects a cutoff not observed in published dyads", () => {
+  assert.throws(
+    () => versionsBetween("6.9", "8.2", new Set(["6.9", "7.2", "8.0"])),
+    /--through 8\.2 was not observed/,
+  );
 });
 
 async function fixture() {

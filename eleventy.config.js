@@ -6,7 +6,10 @@ import { buildChartBundles } from "./scripts/build-charts.js";
  *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
  *   addFilter: (name: string, callback: (date: Date) => string) => void,
  *   addWatchTarget: (target: string) => void,
- *   on: (event: string, callback: () => Promise<void>) => void,
+ *   on: (event: string, callback: (eventArgs: {
+ *     directories: { output: string },
+ *     outputMode: string,
+ *   }) => Promise<void>) => void,
  *   setServerOptions: (options: { middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
  * }} SiteConfig
  */
@@ -15,7 +18,10 @@ import { buildChartBundles } from "./scripts/build-charts.js";
 export default async function (eleventyConfig) {
   // Chart TS is bundled after Eleventy has written the site's output.
   eleventyConfig.addWatchTarget("src/pages/**/chart.ts");
-  eleventyConfig.on("afterBuild", buildChartBundles);
+  eleventyConfig.addWatchTarget("scripts/build-charts.js");
+  eleventyConfig.on("eleventy.after", ({ directories, outputMode }) =>
+    buildChartBundles({ siteOutputDirectory: directories.output, outputMode }),
+  );
 
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   eleventyConfig.addPassthroughCopy({ "src/_redirects": "_redirects" });
@@ -23,6 +29,7 @@ export default async function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/pages/**/*.{png,jpg,jpeg,gif,webp,avif,svg}", {
     mode: "html-relative",
   });
+  eleventyConfig.addPassthroughCopy("src/pages/**/data.json", { mode: "html-relative" });
   eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
 
   if (process.env.ELEVENTY_RUN_MODE === "serve") {
