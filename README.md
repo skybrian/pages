@@ -23,7 +23,9 @@ Existing `.md` and `.markdown` files have an **Edit** button. The preview-only
 CodeMirror 6 editor is bundled locally with esbuild and provides Markdown
 highlighting, line wrapping, undo/redo, and search. Saving is always explicit
 (Save or Ctrl/Cmd-S); there is no autosave or rendered Markdown preview in the
-editor. Saves are limited to 1 MiB, require the page's same-origin CSRF token,
+editor. UTF-8 BOMs and uniform LF/CRLF line endings are retained. Files with
+mixed line endings cannot be saved here; normalize them externally first.
+Saves are limited to 1 MiB, require the page's same-origin CSRF token,
 and use a content hash to reject stale edits instead of overwriting concurrent
 changes. Saves in the preview process are serialized per canonical file path,
 and the current hash is checked again immediately before replacement.

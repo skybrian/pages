@@ -177,7 +177,7 @@ function breadcrumbs(segments: string[]): Breadcrumb[] {
 }
 
 /**
- * Preview-only, read-only browser. Symlinks are deliberately not traversed or
+ * Preview-only file browser with explicit Markdown saves. Symlinks are not traversed or
  * offered as links, keeping every accessible object inside the configured root.
  */
 export function createFileBrowserMiddleware(

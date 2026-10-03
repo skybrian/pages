@@ -16,7 +16,7 @@ export const PREVIEW_RIBBON_STYLES = `
 `.trim();
 
 /**
- * Map an Eleventy input path to the existing read-only source viewer route.
+ * Map an Eleventy input path to the source viewer route.
  * @param {string} inputPath
  */
 export function previewSourceUrl(inputPath) {
