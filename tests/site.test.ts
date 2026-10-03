@@ -30,7 +30,7 @@ describe("year-based page URLs", () => {
       ], { env: { ...process.env, ELEVENTY_RUN_MODE: "build" } });
 
       const homepage = await readFile(path.join(output, "index.html"), "utf8");
-      for (const slug of ["anthropic-run-rates", "flux3-image-test", "japanese-financial-assets-abroad"]) {
+      for (const slug of ["anthropic-run-rates", "flux3-image-test", "japanese-financial-assets-abroad", "us-households-by-income-band"]) {
         assert.ok(homepage.includes(`href="/2026/${slug}/"`));
         assert.ok((await stat(path.join(output, "2026", slug, "index.html"))).isFile());
         await assert.rejects(stat(path.join(output, slug)), { code: "ENOENT" });
@@ -47,6 +47,10 @@ describe("year-based page URLs", () => {
       assert.ok(imagePost.includes(`src="${image}"`));
       assert.ok(imagePost.includes('href="/assets/style.css"'));
 
+      assert.deepEqual(
+        await readFile(path.join(output, "assets/vendor/d3.v7.9.0.min.js")),
+        await readFile("src/assets/vendor/d3.v7.9.0.min.js"),
+      );
       const redirects = await readFile(path.join(output, "_redirects"), "utf8");
       assert.equal(redirects, await readFile("src/_redirects", "utf8"));
       for (const slug of ["anthropic-run-rates", "flux3-image-test"]) {

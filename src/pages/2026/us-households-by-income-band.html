@@ -1,0 +1,588 @@
+---
+title: U.S. households by income band
+description: "Household counts and income-band shares, 1967–2024, in inflation-adjusted 2024 dollars."
+date: 2026-07-08
+layout: false
+---
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>U.S. Households by Income Band</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff;
+      --ink: #111;
+      --muted: #666;
+      --grid: #d7d7d7;
+      --low: #34b7f1;
+      --middle: #0095d9;
+      --high: #005b87;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    nav { max-width:1040px; margin:1.5rem auto; padding:0 1rem; }
+    a { color:#005b87; }
+    #table { overflow-x:auto; }
+    .chart-card {
+      box-sizing: border-box;
+      max-width: 1040px;
+      margin: 3.5rem auto 1.5rem;
+      padding: 1.25rem 2rem 0.85rem;
+      background: radial-gradient(circle at 50% 0%, #f3f3f3, #e5e5e5 70%);
+      box-shadow: 0 16px 35px rgb(0 0 0 / 0.18);
+    }
+    .chart-card + .chart-card { margin-top: 1.5rem; }
+    h1, h2,
+    .dek {
+      margin: 0;
+      padding-left: 108px;
+      color: var(--muted);
+      text-align: left;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 650;
+      line-height: 1.1;
+    }
+    h2 {
+      font-size: 26px;
+      font-weight: 600;
+      margin-top: 0.1rem;
+    }
+    .dek {
+      margin-top: 0.3rem;
+      margin-bottom: 1.1rem;
+      font-size: 16px;
+      font-style: italic;
+    }
+    #chart,
+    #percent-chart {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      overflow: visible;
+    }
+    .axis text { font-size: 10px; }
+    .axis path,
+    .axis line { stroke: #333; }
+    .grid line { stroke: var(--grid); }
+    .grid path { display: none; }
+    .y-label { font-size: 12px; }
+    .callout,
+    .endpoint { font-weight: 800; }
+    .band-label {
+      fill: white;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.05;
+    }
+    .endpoint {
+      fill: white;
+      font-size: 14px;
+    }
+    .source {
+      margin: -0.2rem 0 0.1rem;
+      font-size: 14px;
+    }
+    .tooltip {
+      position: fixed;
+      z-index: 10;
+      max-width: 260px;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid #111;
+      border-radius: 2px;
+      color: #111;
+      background: #fff;
+      box-shadow: 0 3px 8px rgb(0 0 0 / 0.25);
+      font-size: 13px;
+      line-height: 1.25;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 80ms linear;
+    }
+    .tooltip strong { display: block; margin-bottom: 0.15rem; }
+    .income-table {
+      width: min(100% - 2rem, 940px);
+      margin: 2rem auto 1rem;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .income-table th,
+    .income-table td {
+      padding: 0.35rem 0.6rem;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      text-align: right;
+    }
+    .income-table th {
+      border-bottom-width: 2px;
+      font-weight: 700;
+    }
+    .income-table th:first-child,
+    .income-table td:first-child { text-align: left; }
+    .copy-bar {
+      max-width: min(100% - 2rem, 1040px);
+      margin: 0 auto 3rem;
+      text-align: center;
+    }
+    .copy-bar button {
+      padding: 0.7rem 1.1rem;
+      border: 0;
+      border-radius: 6px;
+      color: white;
+      background: #005b87;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .copy-bar button:focus-visible { outline:3px solid #0095d9; outline-offset:3px; }
+    .copy-bar button:disabled { opacity: 0.6; cursor: wait; }
+    .copy-bar .status { margin-left: 0.75rem; font-weight: 700; }
+    @media (max-width: 720px) {
+      .chart-card { margin-top: 1rem; padding-inline: 0.75rem; }
+      h1, h2, .dek { padding-left: 0; }
+      h1 { font-size: 22px; }
+      h2 { font-size: 20px; }
+      .income-table { font-size: 13px; min-width:540px; }
+      .income-table th, .income-table td { padding-inline: 0.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav aria-label="Home"><a href="/">← All pages</a></nav>
+  <main>
+    <section class="chart-card">
+      <h1>U.S. Households by Income Band</h1>
+      <p class="dek">Incomes in 2024 dollars</p>
+      <svg id="chart" width="940" height="560" viewBox="0 0 940 560" role="img" aria-label="Stacked area chart of U.S. households by income band from 1967 to 2024"></svg>
+      <p class="source">Source: <a href="https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-income-households.html">U.S. Census Bureau, Historical Income Tables: Households, Table H-17</a>. Income bands are aggregated from Census brackets: under $35k, $35k–$99,999, and $100k+.</p>
+      <div class="copy-bar"><button type="button" data-copy-svg>Copy SVG</button><span class="status" role="status" aria-live="polite"></span></div>
+    </section>
+
+    <section class="chart-card">
+      <h2>Share of U.S. Households by Income Band</h2>
+      <p class="dek">Percent of households · Incomes in 2024 dollars</p>
+      <svg id="percent-chart" width="940" height="500" viewBox="0 0 940 500" role="img" aria-label="Stacked area chart of the share of U.S. households by income band from 1967 to 2024"></svg>
+      <p class="source">Source: <a href="https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-income-households.html">U.S. Census Bureau, Historical Income Tables: Households, Table H-17</a>. Percentages are each income band's household count divided by total households.</p>
+      <div class="copy-bar"><button type="button" data-copy-svg>Copy SVG</button><span class="status" role="status" aria-live="polite"></span></div>
+    </section>
+
+    <div id="table"></div>
+
+    
+  </main>
+  <div class="tooltip" id="tooltip" role="status"></div>
+
+  <script src="/assets/vendor/d3.v7.9.0.min.js"></script>
+  <script>
+const csv = `year,low,middle,high,total,median_income
+1967,18.669,32.898,9.243,60.81,54880.0
+1968,18.041,33.718,10.451,62.21,57220.0
+1969,17.752,33.539,12.109,63.4,59470.0
+1970,18.657,33.491,12.762,64.78,59040.0
+1971,19.672,34.007,12.934,66.68,58330.0
+1972,19.929,34.808,13.513,68.25,60590.0
+1973,19.146,34.302,16.412,69.86,63230.0
+1974,19.993,35.153,16.014,71.16,60000.0
+1975,21.205,35.415,16.251,72.87,58690.0
+1976,21.21,36.996,15.934,74.14,59580.0
+1977,21.9,37.711,16.419,76.03,59800.0
+1978,21.793,38.355,17.182,77.33,62580.0
+1979,22.455,39.421,18.904,80.78,63170.0
+1980,23.804,38.715,19.769,82.37,60940.0
+1981,24.714,39.342,19.473,83.53,59430.0
+1982,24.666,40.366,18.888,83.92,58330.0
+1983,25.336,40.314,19.76,85.41,60300.0
+1984,24.729,41.137,20.924,86.79,61410.0
+1985,25.124,41.664,21.584,88.46,63730.0
+1986,24.608,42.951,21.921,89.48,66200.0
+1987,24.24,43.372,23.508,91.12,67160.0
+1988,24.766,43.907,24.157,92.83,67700.0
+1989,24.271,43.874,25.205,93.35,69520.0
+1990,25.178,43.958,25.174,94.31,68070.0
+1991,26.126,43.816,25.728,95.67,66130.0
+1992,27.0,43.59,25.84,96.43,65740.0
+1993,27.291,42.812,27.007,97.11,66240.0
+1994,27.819,43.356,27.815,98.99,67470.0
+1995,26.793,43.638,29.199,99.63,68430.0
+1996,26.664,44.44,29.896,101.0,69490.0
+1997,26.343,44.588,31.57,102.5,71410.0
+1998,25.449,45.303,33.148,103.9,74360.0
+1999,25.102,44.794,36.504,106.4,77830.0
+2000,25.522,44.903,37.775,108.2,78060.0
+2001,24.927,45.277,39.096,109.3,76530.0
+2002,27.039,45.855,38.406,111.3,74870.0
+2003,27.776,45.584,38.64,112.0,74680.0
+2004,28.664,46.113,38.523,113.3,74260.0
+2005,28.152,45.989,40.259,114.4,76330.0
+2006,27.492,46.052,42.456,116.0,77330.0
+2007,26.436,46.954,43.41,116.8,79070.0
+2008,28.335,47.349,41.516,117.2,76670.0
+2009,29.258,49.82,38.423,117.5,74890.0
+2010,31.29,48.679,39.931,119.9,73040.0
+2011,31.743,49.651,39.827,121.1,71400.0
+2012,32.708,49.98,39.812,122.5,71410.0
+2013,31.471,49.932,42.497,123.9,74340.0
+2014,32.775,49.84,41.985,124.6,73730.0
+2015,31.203,50.32,44.277,125.8,77740.0
+2016,29.661,50.606,45.933,126.2,80330.0
+2017,29.374,49.931,48.395,127.7,80780.0
+2018,28.679,50.411,49.51,128.6,78950.0
+2019,26.221,48.702,53.577,128.5,83830.0
+2020,27.649,48.321,53.101,129.2,81580.0
+2021,28.995,48.413,53.923,131.2,81270.0
+2022,29.039,49.801,52.691,131.4,79500.0
+2023,27.365,49.575,55.127,132.2,82690.0
+2024,27.364,49.876,57.694,134.8,83730.0`;
+
+const data = d3.csvParse(csv, d3.autoType);
+const bands = ["low", "middle", "high"];
+const labels = {low: "Low-income", middle: "Middle-income", high: "High-income"};
+const colors = {low: "#34b7f1", middle: "#0095d9", high: "#005b87"};
+const fmt = d3.format(".1f");
+
+const xDomain = [1967, 2024];
+const xTicks = [1970, 1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2024];
+const tooltip = d3.select("#tooltip");
+
+function multilineText(selection, lines, lineHeight = 1.05) {
+  const x0 = selection.attr("x");
+  selection.selectAll("tspan")
+    .data(lines)
+    .join("tspan")
+    .attr("x", x0)
+    .attr("dy", (_, i) => i ? `${lineHeight}em` : 0)
+    .text(d => d);
+}
+
+// Hover strips shared by both charts.
+function addHover(svg, source, x, y, valueText) {
+  const hoverData = source.flatMap(d => {
+    let y0 = 0;
+    return bands.map(key => {
+      const out = {year: d.year, band: labels[key], key, value: d[key], y0, y1: y0 + d[key]};
+      y0 += d[key];
+      return out;
+    });
+  });
+
+  svg.append("g")
+    .selectAll("rect")
+    .data(hoverData)
+    .join("rect")
+    .attr("x", d => x(d.year) - 5)
+    .attr("y", d => y(d.y1))
+    .attr("width", 10)
+    .attr("height", d => Math.max(1, y(d.y0) - y(d.y1)))
+    .attr("fill", "transparent")
+    .on("pointerenter pointermove", (event, d) => {
+      tooltip
+        .style("opacity", 1)
+        .style("left", `${event.clientX + 14}px`)
+        .style("top", `${event.clientY + 14}px`)
+        .html(`<strong>${d.year}</strong>${d.band}: ${valueText(d)}`);
+    })
+    .on("pointerleave", () => tooltip.style("opacity", 0));
+}
+
+// ---- Chart 1: Millions of households ----
+(function buildCountChart() {
+  const svg = d3.select("#chart");
+  const width = 940, height = 560;
+  const margin = {top: 32, right: 70, bottom: 46, left: 76};
+  const innerWidth = width - margin.left - margin.right;
+
+  const x = d3.scaleLinear().domain(xDomain).range([margin.left, width - margin.right]);
+  const y = d3.scaleLinear().domain([0, 142]).range([height - margin.bottom, margin.top]);
+  const stack = d3.stack().keys(bands);
+  const stacked = stack(data);
+  const area = d3.area()
+    .x(d => x(d.data.year))
+    .y0(d => y(d[0]))
+    .y1(d => y(d[1]))
+    .curve(d3.curveBasis);
+
+  svg.append("g")
+    .attr("class", "grid")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).tickSize(-innerWidth).tickFormat("").ticks(7));
+
+  svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format("d")));
+
+  svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).tickValues(d3.range(0, 141, 20)).tickFormat(d => `${d}M`));
+
+  svg.append("text")
+    .attr("class", "y-label")
+    .attr("x", margin.left - 70)
+    .attr("y", margin.top - 28)
+    .attr("text-anchor", "start")
+    .text("↑ Millions of Households");
+
+  svg.append("g")
+    .selectAll("path")
+    .data(stacked)
+    .join("path")
+    .attr("fill", d => colors[d.key])
+    .attr("stroke", "#08394f")
+    .attr("stroke-width", 1.4)
+    .attr("d", area);
+
+  const first = data[0];
+  const last = data[data.length - 1];
+  const row = data.find(d => d.year === 2004);
+
+  svg.append("text")
+    .attr("class", "callout")
+    .attr("x", x(1968))
+    .attr("y", y(first.total + 9))
+    .attr("text-anchor", "start")
+    .call(t => multilineText(t, [`${fmt(first.total)}M total`, "in 1967"]));
+
+  svg.append("text")
+    .attr("class", "callout")
+    .attr("x", x(2021.1))
+    .attr("y", y(last.total + 7.5))
+    .attr("text-anchor", "start")
+    .call(t => multilineText(t, [`${fmt(last.total)}M`, "in 2024"]));
+
+  svg.append("g").selectAll("text.band-label")
+    .data([
+      {year: 2001, y: row.low / 2, lines: ["Low-Income", "$35,000 or Less"]},
+      {year: 2001, y: row.low + row.middle / 2, lines: ["Middle-Income", "$35,000 to $100,000"]},
+      {year: 2002, y: row.low + row.middle + row.high / 2, lines: ["High-Income", "$100,000 or More"]}
+    ])
+    .join("text")
+    .attr("class", "band-label")
+    .attr("x", d => x(d.year))
+    .attr("y", d => y(d.y))
+    .attr("text-anchor", "start")
+    .each(function(d) { multilineText(d3.select(this), d.lines); });
+
+  svg.append("g").selectAll("text.endpoint")
+    .data([
+      {year: 1969.3, y: first.low / 2, lines: [`${fmt(first.low)}M`, "in 1967"]},
+      {year: 1969.3, y: first.low + first.middle / 2, lines: [`${fmt(first.middle)}M`, "in 1967"]},
+      {year: 2019.8, y: last.low / 2, lines: [`${fmt(last.low)}M`, "in 2024"]},
+      {year: 2019.8, y: last.low + last.middle / 2, lines: [`${fmt(last.middle)}M`, "in 2024"]},
+      {year: 2019.8, y: last.low + last.middle + last.high / 2, lines: [`${fmt(last.high)}M`, "in 2024"]}
+    ])
+    .join("text")
+    .attr("class", "endpoint")
+    .attr("x", d => x(d.year))
+    .attr("y", d => y(d.y))
+    .attr("text-anchor", "start")
+    .each(function(d) { multilineText(d3.select(this), d.lines); });
+
+  addHover(svg, data, x, y, d => `${fmt(d.value)}M households`);
+})();
+
+// ---- Chart 2: Percent share ----
+(function buildPercentChart() {
+  const svg = d3.select("#percent-chart");
+  const width = 940, height = 500;
+  const margin = {top: 32, right: 70, bottom: 46, left: 76};
+  const innerWidth = width - margin.left - margin.right;
+
+  const pctData = data.map(d => ({
+    year: d.year,
+    low: d.low / d.total * 100,
+    middle: d.middle / d.total * 100,
+    high: d.high / d.total * 100,
+    total: 100
+  }));
+
+  const x = d3.scaleLinear().domain(xDomain).range([margin.left, width - margin.right]);
+  const y = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+  const stack = d3.stack().keys(bands);
+  const stacked = stack(pctData);
+  const area = d3.area()
+    .x(d => x(d.data.year))
+    .y0(d => y(d[0]))
+    .y1(d => y(d[1]))
+    .curve(d3.curveBasis);
+
+  svg.append("g")
+    .attr("class", "grid")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).tickSize(-innerWidth).tickFormat("").ticks(5));
+
+  svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format("d")));
+
+  svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).tickValues(d3.range(0, 101, 20)).tickFormat(d => `${d}%`));
+
+  svg.append("text")
+    .attr("class", "y-label")
+    .attr("x", margin.left - 70)
+    .attr("y", margin.top - 28)
+    .attr("text-anchor", "start")
+    .text("↑ Percent of Households");
+
+  svg.append("g")
+    .selectAll("path")
+    .data(stacked)
+    .join("path")
+    .attr("fill", d => colors[d.key])
+    .attr("stroke", "#08394f")
+    .attr("stroke-width", 1.4)
+    .attr("d", area);
+
+  const first = pctData[0];
+  const last = pctData[pctData.length - 1];
+  const row = pctData.find(d => d.year === 2004);
+
+  svg.append("g").selectAll("text.band-label")
+    .data([
+      {year: 2001, y: row.low / 2, lines: ["Low-Income", "$35,000 or Less"]},
+      {year: 2001, y: (row.low + row.middle / 2), lines: ["Middle-Income", "$35,000 to $100,000"]},
+      {year: 2002, y: (row.low + row.middle + row.high / 2), lines: ["High-Income", "$100,000 or More"]}
+    ])
+    .join("text")
+    .attr("class", "band-label")
+    .attr("x", d => x(d.year))
+    .attr("y", d => y(d.y))
+    .attr("text-anchor", "start")
+    .each(function(d) { multilineText(d3.select(this), d.lines); });
+
+  svg.append("g").selectAll("text.endpoint")
+    .data([
+      {year: 1969.3, y: first.low / 2, lines: [`${fmt(first.low)}%`, "in 1967"]},
+      {year: 1969.3, y: first.low + first.middle / 2, lines: [`${fmt(first.middle)}%`, "in 1967"]},
+      {year: 1969.3, y: first.low + first.middle + first.high / 2, lines: [`${fmt(first.high)}%`, "in 1967"]},
+      {year: 2019.8, y: last.low / 2, lines: [`${fmt(last.low)}%`, "in 2024"]},
+      {year: 2019.8, y: last.low + last.middle / 2, lines: [`${fmt(last.middle)}%`, "in 2024"]},
+      {year: 2019.8, y: last.low + last.middle + last.high / 2, lines: [`${fmt(last.high)}%`, "in 2024"]}
+    ])
+    .join("text")
+    .attr("class", "endpoint")
+    .attr("x", d => x(d.year))
+    .attr("y", d => y(d.y))
+    .attr("text-anchor", "start")
+    .each(function(d) { multilineText(d3.select(this), d.lines); });
+
+  addHover(svg, pctData, x, y, d => `${fmt(d.value)}% of households`);
+})();
+
+// ---- Data table ----
+const table = d3.select("#table").append("table").attr("class", "income-table");
+table.append("thead").append("tr")
+  .selectAll("th")
+  .data(["Year", "Low-income (M)", "Middle-income (M)", "High-income (M)", "Total households (M)"])
+  .join("th")
+  .text(d => d);
+
+table.append("tbody").selectAll("tr")
+  .data(data)
+  .join("tr")
+  .selectAll("td")
+  .data(d => [d.year, fmt(d.low), fmt(d.middle), fmt(d.high), fmt(d.total)])
+  .join("td")
+  .text(d => d);
+
+</script>
+  <script>
+// Inline computed chart styles so pasted SVGs don't depend on this page's CSS.
+function exportChartSvg(card) {
+  const ns = "http://www.w3.org/2000/svg";
+  const original = card.querySelector("svg");
+  const chart = original.cloneNode(true);
+  const properties = ["color", "fill", "fill-opacity", "stroke", "stroke-width",
+    "stroke-opacity", "stroke-dasharray", "stroke-linecap", "stroke-linejoin",
+    "font-family", "font-size", "font-weight", "font-style", "text-anchor",
+    "dominant-baseline", "opacity", "display", "visibility", "paint-order"];
+  const originals = [original, ...original.querySelectorAll("*")];
+  const clones = [chart, ...chart.querySelectorAll("*")];
+  originals.forEach((node, i) => {
+    const style = getComputedStyle(node);
+    properties.forEach(property => clones[i].style.setProperty(property, style.getPropertyValue(property)));
+  });
+  const height = original.viewBox.baseVal.height;
+  const output = document.createElementNS(ns, "svg");
+  output.setAttribute("xmlns", ns);
+  output.setAttribute("viewBox", `0 0 940 ${height + 160}`);
+  output.setAttribute("width", "940");
+  output.setAttribute("height", String(height + 160));
+  output.setAttribute("role", "img");
+  output.setAttribute("aria-labelledby", "export-title export-desc");
+  const make = (tag, attrs, text) => {
+    const node = document.createElementNS(ns, tag);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    if (text) node.textContent = text;
+    output.append(node);
+    return node;
+  };
+  const heading = card.querySelector("h1, h2").textContent;
+  make("title", {id: "export-title"}, heading);
+  make("desc", {id: "export-desc"}, original.getAttribute("aria-label"));
+  make("rect", {width: "100%", height: "100%", fill: "#eee"});
+  make("text", {x: "76", y: "30", fill: "#666", "font-family": "system-ui, sans-serif", "font-size": "26", "font-weight": "650"}, heading);
+  make("text", {x: "76", y: "55", fill: "#666", "font-family": "system-ui, sans-serif", "font-size": "16", "font-style": "italic"}, card.querySelector(".dek").textContent);
+  chart.setAttribute("xmlns", ns);
+  chart.setAttribute("y", "75");
+  output.append(chart);
+  const source = card.querySelector(".source");
+  const link = make("a", {href: source.querySelector("a").href});
+  const words = source.textContent.trim().split(/\s+/);
+  let line = "", lineNumber = 0;
+  const addLine = () => {
+    const text = make("text", {x: "20", y: String(height + 100 + lineNumber++ * 19), fill: "#005b87", "font-family": "system-ui, sans-serif", "font-size": "13", "text-decoration": "underline"}, line);
+    link.append(text);
+  };
+  for (const word of words) {
+    if ((line + " " + word).length > 120) { addLine(); line = word; }
+    else line += (line ? " " : "") + word;
+  }
+  if (line) addLine();
+  return new XMLSerializer().serializeToString(output);
+}
+
+async function copyChartSvg(button) {
+  const card = button.closest(".chart-card");
+  const status = card.querySelector(".status");
+  button.disabled = true;
+  try {
+    const text = exportChartSvg(card);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.append(textarea);
+      try {
+        textarea.focus();
+        textarea.select();
+        if (!document.execCommand("copy")) throw new Error("Copy blocked");
+      } finally { textarea.remove(); }
+    }
+    status.textContent = "SVG copied.";
+  } catch {
+    status.textContent = "Copy failed — clipboard access was blocked. Try another browser.";
+  } finally { button.disabled = false; }
+}
+
+document.querySelectorAll("[data-copy-svg]").forEach(button => {
+  button.addEventListener("click", () => copyChartSvg(button));
+});
+
+  </script>
+</body>
+</html>
