@@ -4,7 +4,7 @@ date: 2026-10-01
 layout: chart-page.njk
 ---
 
-Reported annual run-rate milestones, in billions of dollars. Values and dates are approximate or lower bounds where reported that way.
+Values and dates are approximate or lower bounds where reported that way.
 
 ## Data points and sources
 

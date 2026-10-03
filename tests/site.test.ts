@@ -7,6 +7,7 @@ import { describe, it } from "node:test";
 import { promisify } from "node:util";
 import pageData from "../src/pages/pages.11tydata.js";
 import sharp from "sharp";
+import { JSDOM } from "jsdom";
 
 describe("year-based page URLs", () => {
   it("preserves years and nested directories for standalone and index pages", () => {
@@ -63,6 +64,23 @@ describe("year-based page URLs", () => {
           await readFile(path.join("src/pages/2026", slug, "data.json")),
         );
         const chartHtml = await readFile(path.join(chartPage, "index.html"), "utf8");
+        const dom = new JSDOM(chartHtml);
+        try {
+          const document = dom.window.document;
+          assert.equal(document.querySelector("header")?.nextElementSibling?.className, "chart-page",
+            "the chart follows the heading without an automatic subtitle");
+          const description = document.querySelector('meta[name="description"]')?.getAttribute("content");
+          if (slug !== "anthropic-run-rates") {
+            assert.ok(description, "retain the page description as metadata");
+            assert.equal(document.querySelector('meta[property="og:description"]')?.getAttribute("content"), description);
+            assert.ok(homepage.includes(description), "retain the description in homepage summaries");
+            assert.ok(!document.body.textContent?.includes(description), "do not repeat metadata as visible prose");
+          }
+          assert.ok(document.querySelector("[data-chart-root] img")?.getAttribute("alt"),
+            "retain the fallback chart's accessible description");
+        } finally {
+          dom.window.close();
+        }
         assert.ok(chartHtml.includes(`src="/assets/charts/${slug}.js"`));
         assert.match(chartHtml, /href="\.\/data\.json"[^>]*target="_blank"[^>]*rel="noopener"/);
         assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);

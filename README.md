@@ -95,6 +95,9 @@ my-chart/
 Use `layout: chart-page.njk` in the Markdown front matter, along with `title`,
 `date`, and optionally `description`. The shared layout provides the chart panel,
 Markdown content, a JSON link opening in a new tab, and social-image metadata.
+The description is used for metadata and homepage summaries, not displayed as
+a subtitle. Use the Markdown body for context, sources, methodology, and caveats
+without repeating the heading or chart labels.
 URLs remain based on the year and directory name. Chart directory names must be
 unique across years because generated assets use the directory name.
 

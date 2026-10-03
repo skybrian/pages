@@ -20,7 +20,6 @@
   <main>
     <nav aria-label="Home"><a href="/">← All pages</a></nav>
     <header><h1>{{ title | escape }}</h1></header>
-    {% if description %}<p>{{ description | escape }}</p>{% endif %}
     <section class="chart-page" aria-label="Interactive chart">
       <div class="chart-tabs" role="tablist" aria-label="Chart views" data-chart-tabs hidden></div>
       <div class="chart-root" data-chart-root aria-busy="true" role="region" aria-label="{{ title | escape }}">
