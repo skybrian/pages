@@ -4,20 +4,10 @@ import { buildSync } from "esbuild";
 import { runInNewContext } from "node:vm";
 import { it } from "node:test";
 import { JSDOM } from "jsdom";
-import { createChart } from "../src/pages/2026/kernel-cve-fixes/plot.ts";
 
 const chartPath = "src/pages/2026/kernel-cve-fixes/chart.ts";
-const page = await readFile("src/pages/2026/kernel-cve-fixes/index.html", "utf8");
-const requestedTitle = "A chart of CSVs fixed by Linux kernel releases";
-it("uses the requested title and keeps only the chart card", () => {
-  assert.match(page, new RegExp(`^title: ${requestedTitle.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`, "m"));
-  assert.match(page, new RegExp(`<title>${requestedTitle}</title>`));
-  assert.match(page, new RegExp(`<h1 class="chart-heading" id="chart-heading">${requestedTitle}</h1>`));
-  assert.doesNotMatch(page, /^description:|chart-subtitle|release-range/m);
-  assert.doesNotMatch(page, /<meta[^>]*(?:name="description"|property="og:description")/);
-  const outsideCard = page.split('<article class="chart-card"')[0] + page.split("</article>")[1];
-  assert.doesNotMatch(outsideCard, /<nav\\b|<header\\b|<footer\\b|class="method"/);
-});
+const page = await readFile("src/pages/2026/kernel-cve-fixes/index.md", "utf8");
+const data = JSON.parse(await readFile("src/pages/2026/kernel-cve-fixes/data.json", "utf8")) as unknown;
 const compiled = buildSync({
   entryPoints: [chartPath],
   bundle: true,
@@ -30,172 +20,114 @@ const compiled = buildSync({
 type Row = { version: string; count: number };
 type PlotOptions = {
   width: number;
-  x: { domain: string[]; ticks: string[] };
-  y: { domain: number[] };
+  height: number;
+  x: { domain: string[]; ticks: string[]; label: string | null };
+  y: { domain: number[]; label: string | null };
   marks: Array<{ kind: string; data: Row[]; options?: Record<string, unknown> }>;
 };
 
-function dataset(releases: Row[]) {
-  return {
-    metadata: {
-      source: "https://example.test/source",
-      commit: "a".repeat(40),
-      asOf: "2026-10-02T08:28:22Z",
-      start: "6.9",
-      through: "7.2",
-      method: "fixture",
-      coverage: { publishedCves: 2, missingDyads: 0, missingDyadIds: [] },
-    },
-    releases,
-  };
-}
-
-it("omits axis titles in preview plots while retaining ticks and browser labels", () => {
-  const dom = new JSDOM();
-  try {
-    const data = dataset([{ version: "6.9", count: 200 }, { version: "7.2", count: 400 }]);
-    for (const axisLabels of [false, true]) {
-      const plot = createChart(data, {
-        document: dom.window.document, width: 1120, interactive: false, axisLabels,
-      });
-      const text = [...plot.querySelectorAll("text")].map(node => node.textContent).join(" ");
-      assert.equal(text.includes("Mainline kernel release"), axisLabels);
-      assert.equal(text.includes("Published CVE records with fixes"), axisLabels);
-      assert.match(text, /6\.9/);
-      assert.match(text, /7\.2/);
-      assert.match(text, /400/);
-    }
-  } finally {
-    dom.window.close();
-  }
-});
-
-async function runChart(releases: Row[], initialWidth: number) {
-  let width = initialWidth;
-  let resizeCallback: (() => void) | undefined;
-  let renderAfterResize: (() => void) | undefined;
-  let fetchCalls = 0;
-  const plots: PlotOptions[] = [];
-  const chart = {
-    get clientWidth() { return width; },
-    setAttribute() {},
-    replaceChildren() {},
-    classList: { add() {} },
-  };
-  const provenance = {
-    textContent: "",
-    replaceChildren(...children: Array<string | { textContent: string }>) {
-      this.textContent = children.map((child) =>
-        typeof child === "string" ? child : child.textContent).join("");
-    },
-  };
-  const document = {
-    createElement() { return { textContent: "", href: "", rel: "" }; },
-    querySelector(selector: string) {
-      if (selector === "#chart") return chart;
-      if (selector === "#provenance") return provenance;
-      return null;
-    },
-  };
+function loadDefinition() {
+  let options: PlotOptions | undefined;
+  const document = new JSDOM().window.document;
   const Plot = {
-    plot(options: PlotOptions) {
-      plots.push(options);
-      return chart;
+    plot(value: PlotOptions) {
+      options = value;
+      return document.createElementNS("http://www.w3.org/2000/svg", "svg");
     },
-    lineY(data: Row[], options: Record<string, unknown>) {
-      return { kind: "line", data, options };
-    },
-    dot(data: Row[], options: Record<string, unknown>) {
-      return { kind: "dot", data, options };
-    },
-    tip(data: Row[], options: unknown) {
-      return { kind: "tip", data, options };
-    },
-    pointerX(options: unknown) { return options; },
+    lineY(rows: Row[], config: Record<string, unknown>) { return { kind: "line", data: rows, options: config }; },
+    dot(rows: Row[], config: Record<string, unknown>) { return { kind: "dot", data: rows, options: config }; },
+    tip(rows: Row[], config: unknown) { return { kind: "tip", data: rows, options: config }; },
+    pointerX(config: unknown) { return config; },
   };
-
+  const cjs = { exports: {} as Record<string, unknown> };
   runInNewContext(compiled, {
+    module: cjs,
+    exports: cjs.exports,
     require(name: string) {
       assert.equal(name, "@observablehq/plot");
       return Plot;
     },
-    document,
-    window: {
-      addEventListener(_name: string, callback: () => void) { resizeCallback = callback; },
-      clearTimeout() {},
-      setTimeout(callback: () => void) { renderAfterResize = callback; return 1; },
-    },
-    fetch: async () => {
-      fetchCalls++;
-      return { ok: true, json: async () => dataset(releases) };
-    },
-    Intl,
-    Date,
-    URL,
   });
-
-  const flushPromises = async () => {
-    // The chart starts rendering at module evaluation and awaits fetch().json().
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    await new Promise<void>((resolve) => setImmediate(resolve));
-  };
-  await flushPromises();
-  return {
-    plots,
-    provenance,
-    get fetchCalls() { return fetchCalls; },
-    resize: async (newWidth: number) => {
-      width = newWidth;
-      resizeCallback!();
-      renderAfterResize!();
-      await flushPromises();
-    },
-  };
+  const exports = cjs.exports as { default: { parseData(value: unknown): { metadata: unknown; releases: Row[] }; charts: Array<{
+    id: string; label: string; alt: string;
+    render(data: { metadata: unknown; releases: Row[] }, context: { document: Document; width: number; height: number; mode: "interactive" | "preview" }): SVGSVGElement;
+  }>; previewChart?: string } };
+  return { definition: exports.default, document, get options() { return options!; } };
 }
 
-it("renders sorted categorical releases with a finite y-domain and responsive ticks", async () => {
-  const rows = [
-    { version: "6.10", count: 4 },
-    { version: "6.9", count: 2 },
-    { version: "7.2", count: 9 },
-    { version: "7.1", count: 0 },
-  ];
-  const chart = await runChart(rows, 360);
-  const options = chart.plots[0]!;
-
-  assert.deepEqual([...options.x.domain], ["6.9", "6.10", "7.1", "7.2"]);
-  assert.deepEqual([...options.y.domain], [0, 9]);
-  assert.ok(options.y.domain.every(Number.isFinite));
-  assert.ok(options.x.ticks.length < options.x.domain.length);
-  const dots = options.marks.find((mark) => mark.kind === "dot")!;
-  assert.deepEqual([...dots.data].map((row) => row.version), [...options.x.domain]);
-
-  const title = dots.options!.title as (row: Row) => string;
-  assert.equal(title(rows[0]!), "Linux 6.10: 4 published CVEs");
-  assert.equal(typeof title(rows[0]!), "string");
-  const tip = options.marks.find((mark) => mark.kind === "tip")!;
-  const pointer = tip.options as { title: (row: Row) => string };
-  assert.equal(
-    pointer.title(rows[0]!),
-    "Linux 6.10\n4 published CVE records with fixes",
-  );
-  assert.equal(
-    chart.provenance.textContent,
-    "Source: Linux kernel security vulnerability repository. Source commit aaaaaaaaaaaa.",
-  );
-
-  await chart.resize(900);
-  assert.equal(chart.plots.length, 2);
-  assert.deepEqual([...chart.plots[1]!.x.ticks], [...chart.plots[1]!.x.domain]);
-  assert.equal(chart.fetchCalls, 1);
+it("uses the shared chart-page layout and documents kernel CVE provenance", () => {
+  assert.match(page, /^layout: chart-page\.njk$/m);
+  assert.match(page, /^title: Published CVE fixes by Linux kernel release$/m);
+  assert.match(page, /^description: .+$/m);
+  assert.match(page, /kernel\.googlesource\.com\/pub\/scm\/linux\/security\/vulns/);
+  assert.match(page, /Counts include each CVE at most once per release/);
+  assert.doesNotMatch(page, /CSVs/);
 });
 
-it("uses a finite nonzero y-domain when every release count is zero", async () => {
-  const chart = await runChart([
-    { version: "6.10", count: 0 },
-    { version: "6.9", count: 0 },
-  ], 800);
+it("parses the published dataset and rejects invalid release rows", () => {
+  const { definition } = loadDefinition();
+  const parsed = definition.parseData(data);
+  assert.ok(parsed.releases.length > 0);
+  assert.equal(parsed.releases[0]!.version, "6.9");
+  assert.equal(parsed.releases.at(-1)!.version, "7.2");
+  assert.throws(() => definition.parseData(null), /not an object/);
+  assert.throws(() => definition.parseData({ metadata: {}, releases: [] }), /missing metadata or release counts/);
+  assert.throws(() => definition.parseData({ metadata: {}, releases: [{ version: "6.9", count: -1 }] }), /invalid release count/);
+});
 
-  assert.deepEqual([...chart.plots[0]!.y.domain], [0, 1]);
-  assert.ok(chart.plots[0]!.y.domain.every(Number.isFinite));
+it("exposes a chart definition and renders interactive and preview SVGs", () => {
+  const loaded = loadDefinition();
+  const { definition, document } = loaded;
+  assert.equal(definition.previewChart, "kernel-cve-fixes");
+  assert.equal(definition.charts.length, 1);
+  const chart = definition.charts[0]!;
+  assert.equal(chart.id, "kernel-cve-fixes");
+  assert.match(chart.label, /Published CVE/);
+  assert.match(chart.alt, /Line chart/);
+  const sample = definition.parseData({
+    metadata: { start: "6.9", through: "7.2" },
+    releases: [
+      { version: "6.10", count: 4 },
+      { version: "6.9", count: 2 },
+      { version: "7.2", count: 9 },
+      { version: "7.1", count: 0 },
+    ],
+  });
+
+  const interactive = chart.render(sample, { document, width: 800, height: 448, mode: "interactive" });
+  assert.equal(interactive.namespaceURI, "http://www.w3.org/2000/svg");
+  assert.equal(interactive.classList.contains("plot"), true);
+  const interactiveOptions = loaded.options;
+  assert.deepEqual([...interactiveOptions.x.domain], ["6.9", "6.10", "7.1", "7.2"]);
+  assert.deepEqual([...interactiveOptions.y.domain], [0, 9]);
+  assert.equal(interactiveOptions.x.label, "Mainline kernel release");
+  assert.equal(interactiveOptions.y.label, "Published CVE records with fixes");
+  assert.ok(interactiveOptions.marks.some((mark) => mark.kind === "tip"));
+  const dots = interactiveOptions.marks.find((mark) => mark.kind === "dot")!;
+  const title = dots.options!.title as (row: Row) => string;
+  assert.equal(title(sample.releases[0]!), "Linux 6.10: 4 published CVEs");
+
+  const preview = chart.render(sample, { document, width: 1120, height: 570, mode: "preview" });
+  assert.equal(preview.namespaceURI, "http://www.w3.org/2000/svg");
+  const previewOptions = loaded.options;
+  assert.equal(previewOptions.x.label, null);
+  assert.equal(previewOptions.y.label, null);
+  assert.equal(previewOptions.marks.some((mark) => mark.kind === "tip"), false);
+});
+
+it("uses a finite nonzero y-domain when every release count is zero", () => {
+  const loaded = loadDefinition();
+  const { definition, document } = loaded;
+  const chart = definition.charts[0]!;
+  const data = definition.parseData({
+    metadata: { start: "6.9", through: "6.10" },
+    releases: [
+      { version: "6.10", count: 0 },
+      { version: "6.9", count: 0 },
+    ],
+  });
+
+  chart.render(data, { document, width: 800, height: 448, mode: "interactive" });
+  assert.deepEqual([...loaded.options.y.domain], [0, 1]);
+  assert.ok(loaded.options.y.domain.every(Number.isFinite));
 });

@@ -27,6 +27,18 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 .page-list a { font-weight: 600; }
 .page-list time { display: block; }
 .page-list p { margin: 0.4rem 0 0; }
+.chart-page { margin: 2rem 0; }
+.chart-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.chart-tabs[hidden] { display: none; }
+.chart-tabs button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.5rem 0.8rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.chart-tabs button[aria-selected="true"] { color: #fff; border-color: #245a9a; background: #245a9a; }
+.chart-root { min-height: 18rem; }
+.chart-root svg, .chart-root img { width: 100%; height: auto; }
+.chart-root[aria-busy="true"] { opacity: 0.8; }
+.chart-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; }
+.chart-actions button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.45rem 0.75rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.chart-actions button:disabled { cursor: default; opacity: 0.55; }
+.chart-actions [role="status"] { color: #626262; font-size: 0.9rem; }
 @media (max-width: 480px) {
   main { padding-top: 1.5rem; }
 }

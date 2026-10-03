@@ -1,72 +1,69 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { it } from "node:test";
-import { runInNewContext } from "node:vm";
+import { JSDOM } from "jsdom";
+import definition from "../src/pages/2026/us-households-by-income-band/chart.ts";
 
-const html = await readFile("src/pages/2026/us-households-by-income-band.html", "utf8");
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match => match[1]!);
+const dataBytes = await readFile("src/pages/2026/us-households-by-income-band/data.json");
+const rows = definition.parseData(JSON.parse(dataBytes.toString("utf8")));
 
-it("preserves both charts, the 58 years of data, and a locally hosted D3", async () => {
-  assert.equal((html.match(/data-copy-svg>/g) ?? []).length, 2);
-  assert.equal((html.match(/<svg\b/g) ?? []).length, 2);
-  assert.ok(html.includes('<div id="table"></div>'));
-  assert.ok(!html.includes("cdn.jsdelivr.net"));
-  assert.ok(html.includes("/assets/vendor/d3.v7.9.0.min.js"));
-  // Render from data, not a saved DOM snapshot that D3 would append to.
-  for (const svg of html.matchAll(/<svg\b[^>]*>([\s\S]*?)<\/svg>/g)) {
-    assert.equal(svg[1], "");
-  }
-  const context = {};
-  runInNewContext(await readFile("src/assets/vendor/d3.v7.9.0.min.js", "utf8"), context);
-  runInNewContext(scripts[0]!.split("const tooltip =")[0]!, context);
-  const data = JSON.parse(runInNewContext("JSON.stringify(data)", context)) as Array<{
-    year: number; low: number; middle: number; high: number; total: number;
-  }>;
-  assert.equal(data.length, 58);
-  assert.equal(data[0]!.year, 1967);
-  assert.equal(data[0]!.total, 60.81);
-  assert.equal(data[57]!.year, 2024);
-  assert.equal(data[57]!.total, 134.8);
-  assert.equal(data[57]!.high, 57.694);
-  data.forEach((row, i) => assert.equal(row.year, 1967 + i));
+it("preserves the complete original 1967–2024 dataset", () => {
+  assert.equal(rows.length, 58);
+  assert.deepEqual(rows.map((row) => row.year), Array.from({ length: 58 }, (_, i) => 1967 + i));
+  assert.deepEqual(rows[0], {
+    year: 1967, low: 18.669, middle: 32.898, high: 9.243, total: 60.81, median_income: 54880,
+  });
+  assert.deepEqual(rows[37], {
+    year: 2004, low: 28.664, middle: 46.113, high: 38.523, total: 113.3, median_income: 74260,
+  });
+  assert.deepEqual(rows.at(-1), {
+    year: 2024, low: 27.364, middle: 49.876, high: 57.694, total: 134.8, median_income: 83730,
+  });
+  // Covers every value, including rounded totals and median incomes.
+  assert.equal(createHash("sha256").update(dataBytes).digest("hex"),
+    "3afb59b4175da5adf643cd33853d271f5d23fb4a8a3677384dc8cdebdfedce37");
 });
 
-for (const mode of ["clipboard", "fallback", "blocked"] as const) {
-  it(`copies an individual chart using ${mode} and restores its button`, async () => {
-    let copied = "";
-    let removed = false;
-    const status = { textContent: "" };
-    const card = { querySelector() { return status; } };
-    const button = { disabled: false, closest() { return card; } };
-    const textarea = {
-      value: "", style: {}, focus() {}, select() {},
-      remove() { removed = true; },
-    };
-    const context = {
-      document: {
-        querySelectorAll() { return []; },
-        createElement() { return textarea; },
-        body: { append() {} },
-        execCommand() { copied = textarea.value; return mode !== "blocked"; },
-      },
-      exportChartSvg(selected: unknown) {
-        assert.equal(selected, card);
-        return "<svg>selected chart</svg>";
-      },
-      navigator: { clipboard: { async writeText(text: string) {
-        if (mode !== "clipboard") throw new Error("Denied");
-        copied = text;
-      } } },
-      button,
-    };
-    runInNewContext(scripts[1]!.slice(scripts[1]!.indexOf("async function copyChartSvg")), context);
-    await runInNewContext("copyChartSvg(button)", context);
-    assert.equal(button.disabled, false);
-    if (mode === "blocked") assert.ok(status.textContent.startsWith("Copy failed"));
-    else {
-      assert.equal(status.textContent, "SVG copied.");
-      assert.equal(copied, "<svg>selected chart</svg>");
+it("rejects empty input and nonpositive denominators", () => {
+  assert.throws(() => definition.parseData([]), /non-empty/);
+  assert.throws(() => definition.parseData([{ ...rows[0], total: 0 }]), /positive/);
+});
+
+for (const chart of definition.charts) {
+  it(`renders the ${chart.id} chart at desktop and mobile widths`, () => {
+    const document = new JSDOM("").window.document;
+    const desktop = chart.render(rows, { document, width: 940, height: 526, mode: "preview" });
+    const mobile = chart.render(rows, { document, width: 360, height: 202, mode: "interactive" });
+    for (const svg of [desktop, mobile]) {
+      assert.equal(svg.tagName.toLowerCase(), "svg");
+      assert.ok(svg.querySelectorAll("path").length >= 3);
+      assert.ok(svg.getAttribute("aria-label"));
+      assert.ok(svg.querySelector('[aria-label="x-axis tick"]'));
+      assert.ok(svg.querySelector('[aria-label="y-axis tick"]'));
     }
-    if (mode !== "clipboard") assert.ok(removed);
+    assert.equal(
+      [...desktop.querySelectorAll("path")].filter((path) => path.getAttribute("fill") && path.getAttribute("fill") !== "none").length,
+      3,
+      "one area path per income band; preview must not segment paths by tooltip text",
+    );
+    assert.equal(desktop.style.fontSize, "16px", "preview SVG uses readable text sizing");
+    assert.equal(Number(desktop.getAttribute("height")), 526);
+    assert.equal(Number(mobile.getAttribute("height")), 400, "mobile gets sufficient space for axes and plot");
+    assert.ok(desktop.textContent?.includes(chart.id === "counts" ? "2024: 134.8M total" : "2024: 100%"),
+      "final-year annotation remains visible");
+    assert.ok(!mobile.textContent?.includes("Low-income"), "dense in-area labels are omitted on mobile");
+    const mobileLegend = mobile.querySelector('[aria-label="Income bands"]');
+    assert.ok(mobileLegend);
+    assert.deepEqual(
+      [...mobileLegend.querySelectorAll("text")].map((label) => label.textContent),
+      ["Under $35k", "$35k–$99,999", "$100k+"],
+    );
+    assert.equal(mobileLegend.querySelectorAll("rect").length, 3, "each threshold has a matching color swatch");
+    assert.equal(desktop.querySelector('[aria-label="Income bands"]'), null, "desktop chart presentation remains unchanged");
+    const no2004 = chart.render(rows.filter((row) => row.year !== 2004), {
+      document, width: 940, height: 526, mode: "preview",
+    });
+    assert.ok(no2004.querySelectorAll("path").length >= 3, "annotation placement does not depend on 2004");
   });
 }

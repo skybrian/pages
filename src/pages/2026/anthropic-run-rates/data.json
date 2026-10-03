@@ -1,0 +1,8 @@
+[
+  {"date":"2025-12-31","value":9,"series":"runrate","label":"~$9B","dateText":"End of 2025","source":"Anthropic · Apr. 6, 2026","url":"https://www.anthropic.com/news/google-broadcom-partnership-compute"},
+  {"date":"2026-02-12","value":14,"series":"runrate","label":"$14B","dateText":"Feb. 12, 2026","source":"Anthropic · Feb. 12, 2026","url":"https://www.anthropic.com/news/anthropic-raises-30-billion-series-g-funding-380-billion-post-money-valuation"},
+  {"date":"2026-02-28","value":19,"series":"runrate","label":"~$19B","dateText":"End of Feb. 2026","source":"Reuters · Mar. 10, 2026","url":"https://www.reuters.com/commentary/breakingviews/anthropic-gives-lesson-ai-revenue-hallucination-2026-03-10/"},
+  {"date":"2026-04-06","value":30,"series":"runrate","label":">$30B","dateText":"Apr. 6, 2026","source":"Anthropic · Apr. 6, 2026","url":"https://www.anthropic.com/news/google-broadcom-partnership-compute"},
+  {"date":"2026-05-10","value":47,"series":"runrate","label":"~$47B","dateText":"Early May 2026*","source":"Anthropic · May 28, 2026","url":"https://www.anthropic.com/news/series-h"},
+  {"date":"2026-07-31","value":65,"series":"runrate","label":">$65B","dateText":"End of July 2026","source":"Reuters · Aug. 17, 2026","url":"https://www.reuters.com/technology/anthropic-revenue-run-rate-tops-65-billion-source-says-2026-08-17/"}
+]

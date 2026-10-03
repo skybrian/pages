@@ -81,23 +81,69 @@ the original file. The year and directory name determine the page URL (for examp
 `/2026/my-image-post/`). Referenced post images are copied alongside the generated
 page, while `src/assets/` is reserved for shared site assets such as CSS.
 
-## Observable Plot charts
+## Chart pages
 
-Keep each chart's browser entry point in `chart.ts` beside its page. Eleventy
-bundles these entries with esbuild during both production builds and preview
-builds. Load `/assets/charts/<page-directory-name>.js` with
-`<script type="module">`. Page directory names must be unique across charts.
-All entries are bundled together, so future charts share dependency chunks.
-Only `chart.ts` is a browser entry point; extraction scripts are not bundled
-or published. Adjacent `data.json` files are published alongside their pages.
+Each chart page lives in a directory under `src/pages/<year>/`:
 
-An optional adjacent `preview.ts` exports `renderPreview(dataPath)`, returning a
-PNG buffer. The build writes it to `/assets/charts/<page-directory-name>.png`.
-The kernel CVE page uses this as its Open Graph image for link previews.
-Its shared `plot.ts` renders both the interactive chart and a static SVG using
-JSDOM; Sharp rasterizes that SVG into a 1200×630 PNG. Updating the checked-in
-data automatically updates the preview on the next build. Preview generation
-does not require a browser or fetch external data.
+```text
+my-chart/
+├── index.md       # Page metadata and explanatory Markdown
+├── data.json      # Published data (and, optionally, provenance)
+└── chart.ts       # Chart definitions, validation, and SVG rendering
+```
+
+Use `layout: chart-page.njk` in the Markdown front matter, along with `title`,
+`date`, and optionally `description`. The shared layout provides the chart panel,
+Markdown content, a JSON link opening in a new tab, and social-image metadata.
+URLs remain based on the year and directory name. Chart directory names must be
+unique across years because generated assets use the directory name.
+
+`chart.ts` default-exports a definition; it does not fetch data or mount itself:
+
+```ts
+import { defineChartPage } from "../../../charts/definition.ts";
+
+export default defineChartPage<Dataset>({
+  parseData(value: unknown): Dataset {
+    // Validate the page-specific JSON shape, throwing on invalid input.
+    return validateDataset(value);
+  },
+  charts: [
+    {
+      id: "counts",
+      label: "Counts",
+      alt: "A description of what this chart shows.",
+      render(data, { document, width, height, mode }) {
+        return renderCounts(data, {
+          document, width, height, interactive: mode === "interactive",
+        });
+      },
+    },
+  ],
+  previewChart: "counts", // Optional; defaults to the first chart.
+});
+```
+
+Renderers must return an `SVGSVGElement` and use the supplied `document`, not a
+browser-global document. They may use Observable Plot or construct SVG directly.
+Keep browser side effects and Node-only imports out of the chart definition.
+Additional renderer modules and private data-update scripts may live alongside it;
+only the chart entry and its imports are bundled for the browser.
+
+The shared runtime fetches and validates JSON once, handles loading/errors and
+responsive redraws, and shows keyboard-accessible tabs only when there is more
+than one chart. Tab IDs are reflected in the URL fragment (for example `#shares`).
+The shared Copy SVG button exports the currently selected chart.
+The JSON schema is page-specific; multiple chart views share the same dataset.
+
+During builds, Eleventy bundles generated browser entry points with esbuild and
+publishes adjacent `data.json` files. The build also calls the designated chart's
+renderer using JSDOM in `preview` mode and rasterizes it with Sharp into a
+1200×630 PNG at `/assets/charts/<page-directory-name>.png`. The initial HTML points
+Open Graph metadata at this image's absolute production URL. Each page has one
+social image, regardless of the selected tab; fragments do not select a different
+social card. Invalid data or a broken preview fails the build. Builds use checked-in
+data and do not fetch external sources or require a browser.
 
 ### Updating kernel CVE counts
 

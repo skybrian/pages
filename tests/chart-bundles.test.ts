@@ -9,46 +9,39 @@ async function walk(directory: string): Promise<string[]> {
   const files: string[] = [];
   for (const item of await readdir(directory, { withFileTypes: true })) {
     const file = path.join(directory, item.name);
-    if (item.isDirectory()) files.push(...await walk(file));
-    else files.push(file);
+    if (item.isDirectory()) files.push(...await walk(file)); else files.push(file);
   }
   return files;
 }
+const definition = `export default {
+  parseData(value) { if (!Array.isArray(value)) throw new Error('invalid'); return value; },
+  charts: [{ id: 'main', label: 'Main', alt: 'Main chart', render(data, {document, width, height}) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); text.textContent = String(data.length); svg.append(text); return svg;
+  }}], previewChart: 'main'
+};\n`;
 
 describe("chart bundles", () => {
-  it("writes stable ESM entries and shared hashed chunks only to the configured output", async () => {
+  it("validates data, writes browser entries and static previews only to configured output", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
     const pages = path.join(root, "pages");
     const output = path.join(root, "custom-output");
     try {
-      await mkdir(path.join(pages, "alpha"), { recursive: true });
-      await mkdir(path.join(pages, "beta"), { recursive: true });
-      await writeFile(path.join(pages, "shared.js"), "export const shared = 'shared code';\n");
       for (const page of ["alpha", "beta"]) {
-        await writeFile(
-          path.join(pages, page, "chart.ts"),
-          "import { shared } from '../shared.js'; console.log(shared);\n",
-        );
+        await mkdir(path.join(pages, page), { recursive: true });
+        await writeFile(path.join(pages, page, "chart.ts"), definition);
+        await writeFile(path.join(pages, page, "data.json"), "[1,2]");
       }
       await writeFile(path.join(pages, "update-data.ts"), "console.log('not a chart');\n");
-
       await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
-
       const chartOutput = path.join(output, "assets", "charts");
       const files = await walk(chartOutput);
-      assert.ok(files.includes(path.join(chartOutput, "alpha.js")));
-      assert.ok(files.includes(path.join(chartOutput, "beta.js")));
-      const chunks = files.filter((file) => file.includes(`${path.sep}chunks${path.sep}`));
-      assert.equal(chunks.length, 1);
-      assert.match(path.basename(chunks[0]!), /^chunk-[\w-]+\.js$/);
-      for (const entry of ["alpha.js", "beta.js"]) {
-        assert.match(await readFile(path.join(chartOutput, entry), "utf8"), /chunks\/chunk-/);
-      }
+      for (const entry of ["alpha.js", "beta.js", "alpha.png", "beta.png"]) assert.ok(files.includes(path.join(chartOutput, entry)));
+      assert.ok((await readFile(path.join(chartOutput, "alpha.png"))).subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
       assert.ok(files.every((file) => !file.endsWith(".ts")));
       await assert.rejects(readdir(path.join(root, "_site")));
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+    } finally { await rm(root, { recursive: true, force: true }); }
   });
 
   it("rejects duplicate page-directory entry names", async () => {
@@ -58,29 +51,31 @@ describe("chart bundles", () => {
       for (const parent of ["first", "second"]) {
         const page = path.join(pages, parent, "same-name");
         await mkdir(page, { recursive: true });
-        await writeFile(path.join(page, "chart.ts"), "console.log('chart');\n");
+        await writeFile(path.join(page, "chart.ts"), definition);
+        await writeFile(path.join(page, "data.json"), "[]");
       }
+      await assert.rejects(buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: path.join(root, "out") }), /must be unique/);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
 
-      await assert.rejects(
-        buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: path.join(root, "out") }),
-        /Chart page directory names must be unique/,
-      );
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+  it("rejects data that fails the page parser and does not leave a partial output", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
+    const pages = path.join(root, "pages", "broken");
+    const output = path.join(root, "out");
+    try {
+      await mkdir(pages, { recursive: true });
+      await writeFile(path.join(pages, "chart.ts"), definition);
+      await writeFile(path.join(pages, "data.json"), "{}");
+      await assert.rejects(buildChartBundles({ pagesDirectory: path.join(root, "pages"), siteOutputDirectory: output }));
+      assert.deepEqual(await readdir(path.join(output, "assets", "charts")), []);
+    } finally { await rm(root, { recursive: true, force: true }); }
   });
 
   it("skips non-filesystem Eleventy output modes", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
     try {
-      await buildChartBundles({
-        pagesDirectory: path.join(root, "missing-pages"),
-        siteOutputDirectory: path.join(root, "out"),
-        outputMode: "json",
-      });
+      await buildChartBundles({ pagesDirectory: path.join(root, "missing"), siteOutputDirectory: path.join(root, "out"), outputMode: "json" });
       await assert.rejects(readdir(path.join(root, "out")));
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+    } finally { await rm(root, { recursive: true, force: true }); }
   });
 });

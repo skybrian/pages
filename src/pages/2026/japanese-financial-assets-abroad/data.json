@@ -1,0 +1,242 @@
+[
+  {
+    "year": 1996,
+    "Portfolio investment": 111.165,
+    "Direct investment": 30.571,
+    "Other investment": 135.372,
+    "Reserve assets": 25.242,
+    "Financial derivatives": 0.461
+  },
+  {
+    "year": 1997,
+    "Portfolio investment": 121.794,
+    "Direct investment": 35.594,
+    "Other investment": 160.131,
+    "Reserve assets": 28.693,
+    "Financial derivatives": 0.572
+  },
+  {
+    "year": 1998,
+    "Portfolio investment": 127.72,
+    "Direct investment": 31.521,
+    "Other investment": 152.39,
+    "Reserve assets": 24.862,
+    "Financial derivatives": 0.589
+  },
+  {
+    "year": 1999,
+    "Portfolio investment": 131.687,
+    "Direct investment": 25.687,
+    "Other investment": 116.648,
+    "Reserve assets": 29.398,
+    "Financial derivatives": 0.455
+  },
+  {
+    "year": 2000,
+    "Portfolio investment": 150.115,
+    "Direct investment": 32.307,
+    "Other investment": 117.239,
+    "Reserve assets": 41.478,
+    "Financial derivatives": 0.381
+  },
+  {
+    "year": 2001,
+    "Portfolio investment": 169.99,
+    "Direct investment": 39.841,
+    "Other investment": 117.069,
+    "Reserve assets": 52.772,
+    "Financial derivatives": 0.395
+  },
+  {
+    "year": 2002,
+    "Portfolio investment": 167.203,
+    "Direct investment": 37.01,
+    "Other investment": 105.792,
+    "Reserve assets": 56.063,
+    "Financial derivatives": 0.404
+  },
+  {
+    "year": 2003,
+    "Portfolio investment": 184.353,
+    "Direct investment": 36.647,
+    "Other investment": 92.645,
+    "Reserve assets": 72.083,
+    "Financial derivatives": 0.524
+  },
+  {
+    "year": 2004,
+    "Portfolio investment": 209.247,
+    "Direct investment": 39.116,
+    "Other investment": 97.718,
+    "Reserve assets": 87.72,
+    "Financial derivatives": 0.599
+  },
+  {
+    "year": 2005,
+    "Portfolio investment": 249.493,
+    "Direct investment": 46.079,
+    "Other investment": 108.544,
+    "Reserve assets": 99.444,
+    "Financial derivatives": 3.104
+  },
+  {
+    "year": 2006,
+    "Portfolio investment": 278.757,
+    "Direct investment": 54.103,
+    "Other investment": 116.698,
+    "Reserve assets": 106.435,
+    "Financial derivatives": 2.739
+  },
+  {
+    "year": 2007,
+    "Portfolio investment": 287.687,
+    "Direct investment": 62.416,
+    "Other investment": 146.227,
+    "Reserve assets": 110.279,
+    "Financial derivatives": 4.442
+  },
+  {
+    "year": 2008,
+    "Portfolio investment": 215.682,
+    "Direct investment": 62.692,
+    "Other investment": 141.752,
+    "Reserve assets": 92.983,
+    "Financial derivatives": 7.022
+  },
+  {
+    "year": 2009,
+    "Portfolio investment": 261.989,
+    "Direct investment": 69.34,
+    "Other investment": 123.599,
+    "Reserve assets": 96.777,
+    "Financial derivatives": 4.251
+  },
+  {
+    "year": 2010,
+    "Portfolio investment": 269.207,
+    "Direct investment": 68.925,
+    "Other investment": 129.7,
+    "Reserve assets": 89.33,
+    "Financial derivatives": 4.287
+  },
+  {
+    "year": 2011,
+    "Portfolio investment": 262.639,
+    "Direct investment": 75.565,
+    "Other investment": 140.192,
+    "Reserve assets": 100.517,
+    "Financial derivatives": 4.188
+  },
+  {
+    "year": 2012,
+    "Portfolio investment": 308.099,
+    "Direct investment": 91.232,
+    "Other investment": 145.509,
+    "Reserve assets": 109.464,
+    "Financial derivatives": 4.623
+  },
+  {
+    "year": 2013,
+    "Portfolio investment": 361.253,
+    "Direct investment": 119.302,
+    "Other investment": 175.394,
+    "Reserve assets": 133.529,
+    "Financial derivatives": 8.207
+  },
+  {
+    "year": 2014,
+    "Portfolio investment": 398.055,
+    "Direct investment": 142.017,
+    "Other investment": 183.057,
+    "Reserve assets": 151.08,
+    "Financial derivatives": 56.288
+  },
+  {
+    "year": 2015,
+    "Portfolio investment": 411.792,
+    "Direct investment": 151.852,
+    "Other investment": 181.121,
+    "Reserve assets": 148.553,
+    "Financial derivatives": 45.08
+  },
+  {
+    "year": 2016,
+    "Portfolio investment": 441.421,
+    "Direct investment": 158.885,
+    "Other investment": 199.971,
+    "Reserve assets": 142.56,
+    "Financial derivatives": 43.451
+  },
+  {
+    "year": 2017,
+    "Portfolio investment": 463.596,
+    "Direct investment": 175.141,
+    "Other investment": 198.34,
+    "Reserve assets": 142.406,
+    "Financial derivatives": 33.88
+  },
+  {
+    "year": 2018,
+    "Portfolio investment": 450.942,
+    "Direct investment": 181.882,
+    "Other investment": 212.809,
+    "Reserve assets": 140.276,
+    "Financial derivatives": 32.137
+  },
+  {
+    "year": 2019,
+    "Portfolio investment": 494.979,
+    "Direct investment": 204.168,
+    "Other investment": 212.579,
+    "Reserve assets": 144.521,
+    "Financial derivatives": 34.301
+  },
+  {
+    "year": 2020,
+    "Portfolio investment": 525.594,
+    "Direct investment": 209.598,
+    "Other investment": 225.486,
+    "Reserve assets": 144.214,
+    "Financial derivatives": 44.698
+  },
+  {
+    "year": 2021,
+    "Portfolio investment": 579.954,
+    "Direct investment": 234.224,
+    "Other investment": 245.669,
+    "Reserve assets": 161.751,
+    "Financial derivatives": 35.543
+  },
+  {
+    "year": 2022,
+    "Portfolio investment": 531.224,
+    "Direct investment": 276.354,
+    "Other investment": 293.206,
+    "Reserve assets": 162.14,
+    "Financial derivatives": 76.743
+  },
+  {
+    "year": 2023,
+    "Portfolio investment": 617.348,
+    "Direct investment": 309.231,
+    "Other investment": 317.613,
+    "Reserve assets": 183.094,
+    "Financial derivatives": 62.335
+  },
+  {
+    "year": 2024,
+    "Portfolio investment": 698.818,
+    "Direct investment": 352.816,
+    "Other investment": 354.965,
+    "Reserve assets": 194.412,
+    "Financial derivatives": 63.265
+  },
+  {
+    "year": 2025,
+    "Portfolio investment": 768.653,
+    "Direct investment": 384.535,
+    "Other investment": 373.269,
+    "Reserve assets": 213.672,
+    "Financial derivatives": 65.504
+  }
+]

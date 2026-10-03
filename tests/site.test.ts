@@ -39,7 +39,7 @@ describe("year-based page URLs", () => {
 
       const kernelEntry = homepage.match(/<li>\s*<a href="\/2026\/kernel-cve-fixes\/">[\s\S]*?<\/li>/)?.[0];
       assert.ok(kernelEntry);
-      assert.doesNotMatch(kernelEntry, /<p>/);
+      assert.match(kernelEntry, /CVE/);
 
       const image = "flux3image-a-woman-playing-accordion.png";
       assert.deepEqual(
@@ -56,29 +56,29 @@ describe("year-based page URLs", () => {
         await readFile(path.join(output, "assets/vendor/d3.v7.9.0.min.js")),
         await readFile("src/assets/vendor/d3.v7.9.0.min.js"),
       );
-      const chartPage = path.join(output, "2026/kernel-cve-fixes");
-      assert.deepEqual(
-        await readFile(path.join(chartPage, "data.json")),
-        await readFile("src/pages/2026/kernel-cve-fixes/data.json"),
-      );
-      const chartHtml = await readFile(path.join(chartPage, "index.html"), "utf8");
-      assert.match(chartHtml, /type="module"\s+src="\/assets\/charts\/kernel-cve-fixes\.js"/);
-      assert.match(chartHtml, /href="\.\/data\.json"/);
-      assert.match(chartHtml, /href="\.\/data\.json" target="_blank" rel="noopener">View the source data \(JSON\)<\/a>/);
-      assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
-      assert.doesNotMatch(chartHtml, /<details\b|id="table"|View values as a table/);
-      assert.ok((await stat(path.join(output, "assets/charts/kernel-cve-fixes.js"))).size > 0);
-      assert.match(chartHtml, /property="og:image" content="https:\/\/pages\.skybrian\.com\/assets\/charts\/kernel-cve-fixes\.png"/);
-      const preview = await readFile(path.join(output, "assets/charts/kernel-cve-fixes.png"));
-      const metadata = await sharp(preview).metadata();
-      assert.equal(metadata.format, "png");
-      assert.equal(metadata.width, 1200);
-      assert.equal(metadata.height, 630);
-      assert.ok(preview.length < 1_000_000);
-      const { channels } = (await sharp(preview).stats());
-      assert.ok(channels.some(channel => channel.min < channel.max), "preview is not blank");
-      for (const script of ["chart.ts", "plot.ts", "preview.ts", "update-data.ts"]) {
-        await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
+      for (const slug of ["kernel-cve-fixes", "us-households-by-income-band", "anthropic-run-rates", "japanese-financial-assets-abroad"]) {
+        const chartPage = path.join(output, "2026", slug);
+        assert.deepEqual(
+          await readFile(path.join(chartPage, "data.json")),
+          await readFile(path.join("src/pages/2026", slug, "data.json")),
+        );
+        const chartHtml = await readFile(path.join(chartPage, "index.html"), "utf8");
+        assert.ok(chartHtml.includes(`src="/assets/charts/${slug}.js"`));
+        assert.match(chartHtml, /href="\.\/data\.json"[^>]*target="_blank"[^>]*rel="noopener"/);
+        assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
+        assert.ok((await stat(path.join(output, "assets/charts", `${slug}.js`))).size > 0);
+        assert.ok(chartHtml.includes(`property="og:image" content="https://pages.skybrian.com/assets/charts/${slug}.png"`));
+        const preview = await readFile(path.join(output, "assets/charts", `${slug}.png`));
+        const metadata = await sharp(preview).metadata();
+        assert.equal(metadata.format, "png");
+        assert.equal(metadata.width, 1200);
+        assert.equal(metadata.height, 630);
+        assert.ok(preview.length < 1_000_000);
+        const { channels } = await sharp(preview).stats();
+        assert.ok(channels.some(channel => channel.min < channel.max), `${slug} preview is not blank`);
+        for (const script of ["chart.ts", "plot.ts", "preview.ts", "update-data.ts"]) {
+          await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
+        }
       }
       const redirects = await readFile(path.join(output, "_redirects"), "utf8");
       assert.equal(redirects, await readFile("src/_redirects", "utf8"));

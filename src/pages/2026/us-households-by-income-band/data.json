@@ -1,0 +1,466 @@
+[
+  {
+    "year": 1967,
+    "low": 18.669,
+    "middle": 32.898,
+    "high": 9.243,
+    "total": 60.81,
+    "median_income": 54880.0
+  },
+  {
+    "year": 1968,
+    "low": 18.041,
+    "middle": 33.718,
+    "high": 10.451,
+    "total": 62.21,
+    "median_income": 57220.0
+  },
+  {
+    "year": 1969,
+    "low": 17.752,
+    "middle": 33.539,
+    "high": 12.109,
+    "total": 63.4,
+    "median_income": 59470.0
+  },
+  {
+    "year": 1970,
+    "low": 18.657,
+    "middle": 33.491,
+    "high": 12.762,
+    "total": 64.78,
+    "median_income": 59040.0
+  },
+  {
+    "year": 1971,
+    "low": 19.672,
+    "middle": 34.007,
+    "high": 12.934,
+    "total": 66.68,
+    "median_income": 58330.0
+  },
+  {
+    "year": 1972,
+    "low": 19.929,
+    "middle": 34.808,
+    "high": 13.513,
+    "total": 68.25,
+    "median_income": 60590.0
+  },
+  {
+    "year": 1973,
+    "low": 19.146,
+    "middle": 34.302,
+    "high": 16.412,
+    "total": 69.86,
+    "median_income": 63230.0
+  },
+  {
+    "year": 1974,
+    "low": 19.993,
+    "middle": 35.153,
+    "high": 16.014,
+    "total": 71.16,
+    "median_income": 60000.0
+  },
+  {
+    "year": 1975,
+    "low": 21.205,
+    "middle": 35.415,
+    "high": 16.251,
+    "total": 72.87,
+    "median_income": 58690.0
+  },
+  {
+    "year": 1976,
+    "low": 21.21,
+    "middle": 36.996,
+    "high": 15.934,
+    "total": 74.14,
+    "median_income": 59580.0
+  },
+  {
+    "year": 1977,
+    "low": 21.9,
+    "middle": 37.711,
+    "high": 16.419,
+    "total": 76.03,
+    "median_income": 59800.0
+  },
+  {
+    "year": 1978,
+    "low": 21.793,
+    "middle": 38.355,
+    "high": 17.182,
+    "total": 77.33,
+    "median_income": 62580.0
+  },
+  {
+    "year": 1979,
+    "low": 22.455,
+    "middle": 39.421,
+    "high": 18.904,
+    "total": 80.78,
+    "median_income": 63170.0
+  },
+  {
+    "year": 1980,
+    "low": 23.804,
+    "middle": 38.715,
+    "high": 19.769,
+    "total": 82.37,
+    "median_income": 60940.0
+  },
+  {
+    "year": 1981,
+    "low": 24.714,
+    "middle": 39.342,
+    "high": 19.473,
+    "total": 83.53,
+    "median_income": 59430.0
+  },
+  {
+    "year": 1982,
+    "low": 24.666,
+    "middle": 40.366,
+    "high": 18.888,
+    "total": 83.92,
+    "median_income": 58330.0
+  },
+  {
+    "year": 1983,
+    "low": 25.336,
+    "middle": 40.314,
+    "high": 19.76,
+    "total": 85.41,
+    "median_income": 60300.0
+  },
+  {
+    "year": 1984,
+    "low": 24.729,
+    "middle": 41.137,
+    "high": 20.924,
+    "total": 86.79,
+    "median_income": 61410.0
+  },
+  {
+    "year": 1985,
+    "low": 25.124,
+    "middle": 41.664,
+    "high": 21.584,
+    "total": 88.46,
+    "median_income": 63730.0
+  },
+  {
+    "year": 1986,
+    "low": 24.608,
+    "middle": 42.951,
+    "high": 21.921,
+    "total": 89.48,
+    "median_income": 66200.0
+  },
+  {
+    "year": 1987,
+    "low": 24.24,
+    "middle": 43.372,
+    "high": 23.508,
+    "total": 91.12,
+    "median_income": 67160.0
+  },
+  {
+    "year": 1988,
+    "low": 24.766,
+    "middle": 43.907,
+    "high": 24.157,
+    "total": 92.83,
+    "median_income": 67700.0
+  },
+  {
+    "year": 1989,
+    "low": 24.271,
+    "middle": 43.874,
+    "high": 25.205,
+    "total": 93.35,
+    "median_income": 69520.0
+  },
+  {
+    "year": 1990,
+    "low": 25.178,
+    "middle": 43.958,
+    "high": 25.174,
+    "total": 94.31,
+    "median_income": 68070.0
+  },
+  {
+    "year": 1991,
+    "low": 26.126,
+    "middle": 43.816,
+    "high": 25.728,
+    "total": 95.67,
+    "median_income": 66130.0
+  },
+  {
+    "year": 1992,
+    "low": 27.0,
+    "middle": 43.59,
+    "high": 25.84,
+    "total": 96.43,
+    "median_income": 65740.0
+  },
+  {
+    "year": 1993,
+    "low": 27.291,
+    "middle": 42.812,
+    "high": 27.007,
+    "total": 97.11,
+    "median_income": 66240.0
+  },
+  {
+    "year": 1994,
+    "low": 27.819,
+    "middle": 43.356,
+    "high": 27.815,
+    "total": 98.99,
+    "median_income": 67470.0
+  },
+  {
+    "year": 1995,
+    "low": 26.793,
+    "middle": 43.638,
+    "high": 29.199,
+    "total": 99.63,
+    "median_income": 68430.0
+  },
+  {
+    "year": 1996,
+    "low": 26.664,
+    "middle": 44.44,
+    "high": 29.896,
+    "total": 101.0,
+    "median_income": 69490.0
+  },
+  {
+    "year": 1997,
+    "low": 26.343,
+    "middle": 44.588,
+    "high": 31.57,
+    "total": 102.5,
+    "median_income": 71410.0
+  },
+  {
+    "year": 1998,
+    "low": 25.449,
+    "middle": 45.303,
+    "high": 33.148,
+    "total": 103.9,
+    "median_income": 74360.0
+  },
+  {
+    "year": 1999,
+    "low": 25.102,
+    "middle": 44.794,
+    "high": 36.504,
+    "total": 106.4,
+    "median_income": 77830.0
+  },
+  {
+    "year": 2000,
+    "low": 25.522,
+    "middle": 44.903,
+    "high": 37.775,
+    "total": 108.2,
+    "median_income": 78060.0
+  },
+  {
+    "year": 2001,
+    "low": 24.927,
+    "middle": 45.277,
+    "high": 39.096,
+    "total": 109.3,
+    "median_income": 76530.0
+  },
+  {
+    "year": 2002,
+    "low": 27.039,
+    "middle": 45.855,
+    "high": 38.406,
+    "total": 111.3,
+    "median_income": 74870.0
+  },
+  {
+    "year": 2003,
+    "low": 27.776,
+    "middle": 45.584,
+    "high": 38.64,
+    "total": 112.0,
+    "median_income": 74680.0
+  },
+  {
+    "year": 2004,
+    "low": 28.664,
+    "middle": 46.113,
+    "high": 38.523,
+    "total": 113.3,
+    "median_income": 74260.0
+  },
+  {
+    "year": 2005,
+    "low": 28.152,
+    "middle": 45.989,
+    "high": 40.259,
+    "total": 114.4,
+    "median_income": 76330.0
+  },
+  {
+    "year": 2006,
+    "low": 27.492,
+    "middle": 46.052,
+    "high": 42.456,
+    "total": 116.0,
+    "median_income": 77330.0
+  },
+  {
+    "year": 2007,
+    "low": 26.436,
+    "middle": 46.954,
+    "high": 43.41,
+    "total": 116.8,
+    "median_income": 79070.0
+  },
+  {
+    "year": 2008,
+    "low": 28.335,
+    "middle": 47.349,
+    "high": 41.516,
+    "total": 117.2,
+    "median_income": 76670.0
+  },
+  {
+    "year": 2009,
+    "low": 29.258,
+    "middle": 49.82,
+    "high": 38.423,
+    "total": 117.5,
+    "median_income": 74890.0
+  },
+  {
+    "year": 2010,
+    "low": 31.29,
+    "middle": 48.679,
+    "high": 39.931,
+    "total": 119.9,
+    "median_income": 73040.0
+  },
+  {
+    "year": 2011,
+    "low": 31.743,
+    "middle": 49.651,
+    "high": 39.827,
+    "total": 121.1,
+    "median_income": 71400.0
+  },
+  {
+    "year": 2012,
+    "low": 32.708,
+    "middle": 49.98,
+    "high": 39.812,
+    "total": 122.5,
+    "median_income": 71410.0
+  },
+  {
+    "year": 2013,
+    "low": 31.471,
+    "middle": 49.932,
+    "high": 42.497,
+    "total": 123.9,
+    "median_income": 74340.0
+  },
+  {
+    "year": 2014,
+    "low": 32.775,
+    "middle": 49.84,
+    "high": 41.985,
+    "total": 124.6,
+    "median_income": 73730.0
+  },
+  {
+    "year": 2015,
+    "low": 31.203,
+    "middle": 50.32,
+    "high": 44.277,
+    "total": 125.8,
+    "median_income": 77740.0
+  },
+  {
+    "year": 2016,
+    "low": 29.661,
+    "middle": 50.606,
+    "high": 45.933,
+    "total": 126.2,
+    "median_income": 80330.0
+  },
+  {
+    "year": 2017,
+    "low": 29.374,
+    "middle": 49.931,
+    "high": 48.395,
+    "total": 127.7,
+    "median_income": 80780.0
+  },
+  {
+    "year": 2018,
+    "low": 28.679,
+    "middle": 50.411,
+    "high": 49.51,
+    "total": 128.6,
+    "median_income": 78950.0
+  },
+  {
+    "year": 2019,
+    "low": 26.221,
+    "middle": 48.702,
+    "high": 53.577,
+    "total": 128.5,
+    "median_income": 83830.0
+  },
+  {
+    "year": 2020,
+    "low": 27.649,
+    "middle": 48.321,
+    "high": 53.101,
+    "total": 129.2,
+    "median_income": 81580.0
+  },
+  {
+    "year": 2021,
+    "low": 28.995,
+    "middle": 48.413,
+    "high": 53.923,
+    "total": 131.2,
+    "median_income": 81270.0
+  },
+  {
+    "year": 2022,
+    "low": 29.039,
+    "middle": 49.801,
+    "high": 52.691,
+    "total": 131.4,
+    "median_income": 79500.0
+  },
+  {
+    "year": 2023,
+    "low": 27.365,
+    "middle": 49.575,
+    "high": 55.127,
+    "total": 132.2,
+    "median_income": 82690.0
+  },
+  {
+    "year": 2024,
+    "low": 27.364,
+    "middle": 49.876,
+    "high": 57.694,
+    "total": 134.8,
+    "median_income": 83730.0
+  }
+]

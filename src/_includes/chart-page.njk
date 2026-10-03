@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title | escape }} · skybrian’s pages</title>
+  {% if description %}<meta name="description" content="{{ description | escape }}">{% endif %}
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://pages.skybrian.com{{ page.url }}">
+  <meta property="og:title" content="{{ title | escape }}">
+  {% if description %}<meta property="og:description" content="{{ description | escape }}">{% endif %}
+  <meta property="og:image" content="https://pages.skybrian.com/assets/charts/{{ page.fileSlug }}.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ description | default(title) | escape }}">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <main>
+    <nav aria-label="Home"><a href="/">← All pages</a></nav>
+    <header><h1>{{ title | escape }}</h1></header>
+    {% if description %}<p>{{ description | escape }}</p>{% endif %}
+    <section class="chart-page" aria-label="Interactive chart">
+      <div class="chart-tabs" role="tablist" aria-label="Chart views" data-chart-tabs hidden></div>
+      <div class="chart-root" data-chart-root aria-busy="true" role="region" aria-label="{{ title | escape }}">
+        <img src="/assets/charts/{{ page.fileSlug }}.png" alt="{{ description | default(title) | escape }}" width="1200" height="630">
+      </div>
+      <div class="chart-actions">
+        <button type="button" data-copy-svg disabled>Copy SVG</button>
+        <span data-copy-status role="status" aria-live="polite"></span>
+      </div>
+      <p><a href="./data.json" target="_blank" rel="noopener">View data (JSON)</a></p>
+    </section>
+    {{ content | safe }}
+  </main>
+  <script type="module" src="/assets/charts/{{ page.fileSlug }}.js"></script>
+</body>
+</html>
