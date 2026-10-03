@@ -13,6 +13,7 @@ export type Breadcrumb = {
 export type DirectoryEntry = {
   name: string;
   href?: string;
+  target?: "_blank";
 };
 
 type PageLayoutProps = {
@@ -65,7 +66,11 @@ export function DirectoryListing({
       <ul>
         {parentHref && <li><a href={parentHref}>../</a></li>}
         {entries.map((entry) => (
-          <li key={entry.href ?? entry.name}>{entry.href ? <a href={entry.href}>{entry.name}</a> : entry.name}</li>
+          <li key={entry.href ?? entry.name}>{entry.href ? (
+            <a href={entry.href} target={entry.target} rel={entry.target === "_blank" ? "noopener" : undefined}>
+              {entry.name}
+            </a>
+          ) : entry.name}</li>
         ))}
       </ul>
     </PageLayout>

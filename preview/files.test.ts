@@ -54,13 +54,19 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "binary.txt"), Buffer.from([0x41, 0x00, 0x42]));
     await writeFile(path.join(root, "invalid-utf8.txt"), Buffer.from([0xc3, 0x28]));
     await writeFile(path.join(root, "large.txt"), Buffer.alloc(1024 * 1024 + 1, 0x61));
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVQImWNgYGD4DwABBAEAfbLI3wAAAABJRU5ErkJggg==", "base64");
+    await writeFile(path.join(root, "pixel.png"), png);
+    await writeFile(path.join(root, "fake.png"), "not a PNG");
+    await writeFile(path.join(root, "oversized.png"), Buffer.alloc(10 * 1024 * 1024 + 1));
     await writeFile(path.join(root, "..notes", "inside.txt"), "inside notes");
     await writeFile(path.join(root, "..notes-file.txt"), "leading dots");
     await writeFile(path.join(root, "owner's file.txt"), "apostrophe");
     await writeFile(path.join(root, "hostile <style><script>.txt"), "before </script><script>alert('source')</script> after </style>");
     await writeFile(path.join(root, "crumb & <folder>", "file.txt"), "safe");
     await writeFile(path.join(outside, "secret"), "secret");
+    await writeFile(path.join(outside, "secret.png"), png);
     await symlink(outside, path.join(root, "escape"));
+    await symlink(path.join(outside, "secret.png"), path.join(root, "linked.png"));
     fileMiddleware = createFileBrowserMiddleware(root);
     assetsMiddleware = createMicrolighterAssetsMiddleware(path.resolve("."));
     server = createServer((req, res) => {
@@ -194,6 +200,34 @@ describe("preview file browser", () => {
     const head = await fetch(url, { method: "HEAD" });
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
+  });
+
+  it("opens validated PNGs in a new tab and serves bytes with GET and HEAD", async () => {
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.match(listing, /<a href="\/admin\/files\/pixel\.png" target="_blank" rel="noopener">pixel\.png<\/a>/);
+    assert.doesNotMatch(listing, /target="_blank"[^>]*>README/);
+    const response = await fetch(`${origin}/admin/files/pixel.png`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("content-type"), "image/png");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVQImWNgYGD4DwABBAEAfbLI3wAAAABJRU5ErkJggg==", "base64"));
+    const head = await fetch(`${origin}/admin/files/pixel.png`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(head.headers.get("content-type"), "image/png");
+    assert.equal(await head.text(), "");
+  });
+
+  it("rejects mislabeled, oversized, and symlinked PNGs", async () => {
+    for (const filename of ["fake.png", "oversized.png"]) {
+      assert.equal((await fetch(`${origin}/admin/files/${filename}`)).status, 415);
+      assert.equal((await fetch(`${origin}/admin/files/${filename}`, { method: "HEAD" })).status, 415);
+      const listing = await (await fetch(`${origin}/admin/files/`)).text();
+      assert.doesNotMatch(listing, new RegExp(`href="/admin/files/${filename}"`));
+    }
+    assert.equal((await fetch(`${origin}/admin/files/linked.png`)).status, 404);
+    const listing = await (await fetch(`${origin}/admin/files/`)).text();
+    assert.doesNotMatch(listing, /href="\/admin\/files\/linked\.png"/);
   });
 
   it("maps supported filename extensions and defaults unsupported names to plaintext", () => {

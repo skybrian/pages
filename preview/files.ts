@@ -25,6 +25,13 @@ const LANGUAGE_BY_EXTENSION: Record<string, string> = {
 // Text previews are intentionally bounded so listings and direct requests never
 // read arbitrarily large files into memory.
 const MAX_TEXT_BYTES = 1024 * 1024;
+const MAX_PNG_BYTES = 10 * 1024 * 1024;
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit++) crc = (crc & 1) ? (0xedb88320 ^ (crc >>> 1)) : (crc >>> 1);
+  return crc >>> 0;
+});
 
 export function languageForFilename(filename: string): string {
   return LANGUAGE_BY_EXTENSION[path.extname(filename).toLowerCase()] ?? "plaintext";
@@ -61,6 +68,71 @@ async function readTextFile(filePath: string): Promise<string | null> {
   } finally {
     await file?.close().catch(() => {});
   }
+}
+
+function validPng(buffer: Buffer): boolean {
+  if (buffer.length < 45 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE)) return false;
+  const crc32 = (start: number, end: number): number => {
+    let crc = 0xffffffff;
+    for (let i = start; i < end; i++) crc = CRC_TABLE[(crc ^ buffer[i]!) & 0xff]! ^ (crc >>> 8);
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  let offset = 8;
+  let first = true;
+  while (offset + 12 <= buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const typeOffset = offset + 4;
+    const dataOffset = offset + 8;
+    const end = dataOffset + length;
+    if (end + 4 > buffer.length) return false;
+    const type = buffer.toString("ascii", typeOffset, dataOffset);
+    if (crc32(typeOffset, end) !== buffer.readUInt32BE(end)) return false;
+    if (first) {
+      if (type !== "IHDR" || length !== 13 || buffer.readUInt32BE(dataOffset) === 0
+        || buffer.readUInt32BE(dataOffset + 4) === 0) return false;
+      first = false;
+    }
+    if (type === "IEND") return length === 0 && end + 4 === buffer.length;
+    offset = end + 4;
+  }
+  return false;
+}
+
+async function readPngFile(filePath: string): Promise<Buffer | null> {
+  let file;
+  try {
+    file = await open(filePath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    const stat = await file.stat();
+    if (!stat.isFile() || stat.size > MAX_PNG_BYTES || stat.size < 45) return null;
+    const buffer = Buffer.alloc(stat.size + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await file.read(buffer, length, buffer.length - length, length);
+      if (bytesRead === 0) break;
+      length += bytesRead;
+    }
+    if (length !== stat.size || length > MAX_PNG_BYTES) return null;
+    const png = buffer.subarray(0, length);
+    return validPng(png) ? png : null;
+  } catch {
+    return null;
+  } finally {
+    await file?.close().catch(() => {});
+  }
+}
+
+function isPngFilename(filename: string): boolean {
+  return path.extname(filename).toLowerCase() === ".png";
+}
+
+function pngResponse(res: ServerResponse, image: Buffer, head: boolean): void {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Content-Length", image.length);
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  if (head) res.end();
+  else res.end(image);
 }
 
 function isOutsideRoot(relative: string): boolean {
@@ -141,9 +213,14 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       }
       const stat = await lstat(targetPath);
       if (stat.isFile()) {
+        const name = segments.at(-1) ?? "";
+        if (isPngFilename(name)) {
+          const image = await readPngFile(targetPath);
+          if (image === null) return htmlResponse(res, 415, renderErrorPage(415, "This is not a supported PNG image"), head);
+          return pngResponse(res, image, head);
+        }
         const text = await readTextFile(targetPath);
         if (text === null) return htmlResponse(res, 415, renderErrorPage(415, "This file is not a supported text file"), head);
-        const name = segments.at(-1) ?? "";
 
         const language = languageForFilename(name);
         return htmlResponse(res, 200, renderSourceView({
@@ -162,11 +239,15 @@ export function createFileBrowserMiddleware(rootDirectory: string) {
       for (const entry of entries) {
         const isLink = entry.isSymbolicLink();
         const isDirectory = entry.isDirectory();
-        const isTextFile = entry.isFile() && (await readTextFile(path.join(targetPath, entry.name))) !== null;
+        const isPngName = isPngFilename(entry.name);
+        const isTextFile = entry.isFile() && !isPngName
+          && (await readTextFile(path.join(targetPath, entry.name))) !== null;
+        const isPng = entry.isFile() && isPngName
+          && (await readPngFile(path.join(targetPath, entry.name))) !== null;
         const href = `${ROUTE}/${[...segments, entry.name].map(encodeURIComponent).join("/")}${entry.isDirectory() ? "/" : ""}`;
         const name = `${entry.name}${isDirectory ? "/" : ""}${isLink ? " (symlink blocked)" : ""}`;
-        const linked = !isLink && (isDirectory || isTextFile);
-        entriesForView.push({ name, href: linked ? href : undefined });
+        const linked = !isLink && (isDirectory || isTextFile || isPng);
+        entriesForView.push({ name, href: linked ? href : undefined, target: isPng && !isLink ? "_blank" : undefined });
       }
       const parentHref = segments.length
         ? `${ROUTE}${segments.length > 1 ? `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}` : ""}/`
