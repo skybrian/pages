@@ -13,6 +13,7 @@ it("uses the requested title and keeps only the chart card", () => {
   assert.match(page, new RegExp(`^title: ${requestedTitle.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`, "m"));
   assert.match(page, new RegExp(`<title>${requestedTitle}</title>`));
   assert.match(page, new RegExp(`<h1 class="chart-heading" id="chart-heading">${requestedTitle}</h1>`));
+  assert.doesNotMatch(page, /^description:|chart-subtitle|release-range/m);
   const outsideCard = page.split('<article class="chart-card"')[0] + page.split("</article>")[1];
   assert.doesNotMatch(outsideCard, /<nav\\b|<header\\b|<footer\\b|class="method"/);
 });
@@ -80,7 +81,6 @@ async function runChart(releases: Row[], initialWidth: number) {
     replaceChildren() {},
     classList: { add() {} },
   };
-  const releaseRange = { textContent: "" };
   const provenance = {
     textContent: "",
     replaceChildren(...children: Array<string | { textContent: string }>) {
@@ -92,7 +92,6 @@ async function runChart(releases: Row[], initialWidth: number) {
     createElement() { return { textContent: "", href: "", rel: "" }; },
     querySelector(selector: string) {
       if (selector === "#chart") return chart;
-      if (selector === "#release-range") return releaseRange;
       if (selector === "#provenance") return provenance;
       return null;
     },
@@ -142,7 +141,6 @@ async function runChart(releases: Row[], initialWidth: number) {
   await flushPromises();
   return {
     plots,
-    releaseRange,
     provenance,
     get fetchCalls() { return fetchCalls; },
     resize: async (newWidth: number) => {
@@ -180,7 +178,6 @@ it("renders sorted categorical releases with a finite y-domain and responsive ti
     pointer.title(rows[0]!),
     "Linux 6.10\n4 published CVE records with fixes",
   );
-  assert.equal(chart.releaseRange.textContent, "Linux 6.9–7.2");
   assert.equal(
     chart.provenance.textContent,
     "Source: Linux kernel security vulnerability repository. Source commit aaaaaaaaaaaa.",

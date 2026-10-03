@@ -37,6 +37,10 @@ describe("year-based page URLs", () => {
         await assert.rejects(stat(path.join(output, slug)), { code: "ENOENT" });
       }
 
+      const kernelEntry = homepage.match(/<li>\s*<a href="\/2026\/kernel-cve-fixes\/">[\s\S]*?<\/li>/)?.[0];
+      assert.ok(kernelEntry);
+      assert.doesNotMatch(kernelEntry, /<p>/);
+
       const image = "flux3image-a-woman-playing-accordion.png";
       assert.deepEqual(
         await readFile(path.join(output, "2026/flux3-image-test", image)),
