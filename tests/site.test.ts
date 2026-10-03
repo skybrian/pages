@@ -61,6 +61,7 @@ describe("year-based page URLs", () => {
       assert.match(chartHtml, /href="\.\/data\.json"/);
       assert.match(chartHtml, /href="\.\/data\.json" target="_blank" rel="noopener">View the source data \(JSON\)<\/a>/);
       assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
+      assert.doesNotMatch(chartHtml, /<details\b|id="table"|View values as a table/);
       assert.ok((await stat(path.join(output, "assets/charts/kernel-cve-fixes.js"))).size > 0);
       for (const script of ["chart.ts", "update-data.ts"]) {
         await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
