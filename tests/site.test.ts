@@ -30,7 +30,7 @@ describe("year-based page URLs", () => {
       ], { env: { ...process.env, ELEVENTY_RUN_MODE: "build" } });
 
       const homepage = await readFile(path.join(output, "index.html"), "utf8");
-      for (const slug of ["anthropic-run-rates", "flux3-image-test"]) {
+      for (const slug of ["anthropic-run-rates", "flux3-image-test", "japanese-financial-assets-abroad"]) {
         assert.ok(homepage.includes(`href="/2026/${slug}/"`));
         assert.ok((await stat(path.join(output, "2026", slug, "index.html"))).isFile());
         await assert.rejects(stat(path.join(output, slug)), { code: "ENOENT" });
