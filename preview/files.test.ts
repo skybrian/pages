@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -299,6 +300,34 @@ describe("preview file browser", () => {
     assert.equal((await rawGet("/admin/files/%ZZ")).status, 400);
     assert.equal((await rawGet("/admin/files/a%2f..%2fetc")).status, 400);
     assert.equal((await fetch(`${origin}/admin/files/escape/secret`)).status, 404);
+  });
+
+  it("saves only existing Markdown with CSRF checks, atomic hash-guarded replacement", async () => {
+    const sourcePath = "/admin/files/src/pages/published.md";
+    const source = await fetch(`${origin}${sourcePath}`);
+    const html = await source.text();
+    const token = html.match(/name="pages-edit-token" content="([a-f0-9]{64})"/)?.[1];
+    const cookie = source.headers.get("set-cookie")?.match(/pages_edit_csrf=([a-f0-9]{64})/)?.[1];
+    assert.ok(token && cookie);
+    const send = (body: unknown, headers: Record<string, string> = {}) => fetch(`${origin}${sourcePath}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `pages_edit_csrf=${cookie}`,
+        "x-pages-csrf-token": token!, ...headers },
+      body: JSON.stringify(body),
+    });
+    const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+    const original = "# Published page";
+    assert.equal((await send({ content: "changed", hash: hash(original) }, { origin: "http://attacker.test" })).status, 403);
+    assert.equal((await send({ content: "changed", hash: hash(original) }, { "x-pages-csrf-token": "bad" })).status, 403);
+    assert.equal((await send({ content: "changed", hash: hash("stale") })).status, 409);
+    const saved = await send({ content: "## saved\r\nline\n", hash: hash(original) });
+    assert.equal(saved.status, 200);
+    assert.deepEqual(await import("node:fs/promises").then(({ readFile }) => readFile(path.join(root, "src/pages/published.md"))), Buffer.from("## saved\r\nline\n"));
+    assert.equal((await send({ content: "x", hash: hash("## saved\r\nline\n") })).status, 200);
+    assert.equal((await fetch(`${origin}/admin/files/sample.ts`, { method: "POST" })).status, 405);
+    assert.equal((await fetch(`${origin}/admin/files/src/pages/missing.md`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+    })).status, 403);
   });
 
   it("returns 404 for missing paths and falls through outside the route boundary", async () => {

@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
-import { lstat, open, readdir, realpath } from "node:fs/promises";
+import { lstat, open, readdir, realpath, rename, unlink } from "node:fs/promises";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { renderDirectoryListing, renderErrorPage, renderSourceView, type Breadcrumb, type DirectoryEntry } from "./views.tsx";
@@ -25,6 +26,7 @@ const LANGUAGE_BY_EXTENSION: Record<string, string> = {
 // Text previews are intentionally bounded so listings and direct requests never
 // read arbitrarily large files into memory.
 const MAX_TEXT_BYTES = 1024 * 1024;
+const MAX_SAVE_BYTES = MAX_TEXT_BYTES;
 const MAX_PNG_BYTES = 10 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
@@ -167,6 +169,8 @@ export function createFileBrowserMiddleware(
   resolvePreviewUrl?: (sourcePath: string) => string | undefined,
 ) {
   const root = path.resolve(rootDirectory);
+  const csrfSecret = randomBytes(32);
+  const csrf = (file: string) => createHash("sha256").update(csrfSecret).update(file).digest("hex");
 
   return async (req: IncomingMessage, res: ServerResponse, next: (error?: unknown) => void) => {
     const target = req.url ?? "/";
@@ -174,9 +178,9 @@ export function createFileBrowserMiddleware(
     if (rawPath !== ROUTE && !rawPath.startsWith(`${ROUTE}/`)) return next();
 
     const head = req.method === "HEAD";
-    if (req.method !== "GET" && !head) {
+    if (req.method !== "GET" && !head && req.method !== "POST") {
       res.statusCode = 405;
-      res.setHeader("Allow", "GET, HEAD");
+      res.setHeader("Allow", "GET, HEAD, POST");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Content-Type-Options", "nosniff");
       return res.end();
@@ -202,6 +206,97 @@ export function createFileBrowserMiddleware(
     }
 
     try {
+      if (req.method === "POST") {
+        const extension = path.extname(segments.at(-1) ?? "").toLowerCase();
+        if (!segments.length || ![".md", ".markdown"].includes(extension)) {
+          return htmlResponse(res, 405, renderErrorPage(405, "Method not allowed"), false);
+        }
+        if (!/^application\/json(?:\s*;|$)/i.test(req.headers["content-type"] ?? "")) {
+          return htmlResponse(res, 415, renderErrorPage(415, "Expected JSON"), false);
+        }
+        const cookie = req.headers.cookie?.match(/(?:^|;\s*)pages_edit_csrf=([a-f0-9]{64})(?:;|$)/)?.[1];
+        const tokenHeader = req.headers["x-pages-csrf-token"];
+        const expected = csrf(relative);
+        const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
+        const validToken = !!cookie && !!token && cookie === expected && token === expected
+          && timingSafeEqual(Buffer.from(cookie), Buffer.from(expected));
+        const origin = req.headers.origin;
+        const host = req.headers["x-forwarded-host"]?.toString().split(",")[0]?.trim() ?? req.headers.host;
+        const proto = req.headers["x-forwarded-proto"]?.toString().split(",")[0]?.trim()
+          ?? ((req.socket as import("node:tls").TLSSocket).encrypted ? "https" : "http");
+        let validOrigin = true;
+        if (origin) {
+          try { validOrigin = new URL(origin).host === host && new URL(origin).protocol === `${proto}:`; }
+          catch { validOrigin = false; }
+        }
+        if (!validToken || !validOrigin || req.headers["sec-fetch-site"] === "cross-site") {
+          return htmlResponse(res, 403, renderErrorPage(403, "Request rejected"), false);
+        }
+        const chunks: Buffer[] = [];
+        let received = 0;
+        for await (const chunk of req) {
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          received += buffer.length;
+          if (received > MAX_SAVE_BYTES + 4096) {
+            res.statusCode = 413;
+            return res.end();
+          }
+          chunks.push(buffer);
+        }
+        let payload: { content?: unknown; hash?: unknown };
+        try { payload = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+        catch { return htmlResponse(res, 400, renderErrorPage(400, "Invalid save request"), false); }
+        if (typeof payload.content !== "string" || Buffer.byteLength(payload.content, "utf8") > MAX_SAVE_BYTES
+          || typeof payload.hash !== "string" || !/^[a-f0-9]{64}$/.test(payload.hash)
+          || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(payload.content)) {
+          return htmlResponse(res, 400, renderErrorPage(400, "Invalid Markdown content"), false);
+        }
+        // Refuse symlinks in every path component, then pin the file identity
+        // through an O_NOFOLLOW descriptor and compare its content hash.
+        let current = root;
+        for (const segment of segments) {
+          current = path.join(current, segment);
+          const part = await lstat(current);
+          if (part.isSymbolicLink()) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), false);
+        }
+        const target = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+        const stat = await target.stat();
+        if (!stat.isFile() || stat.size > MAX_SAVE_BYTES) {
+          await target.close();
+          return htmlResponse(res, 415, renderErrorPage(415, "File cannot be saved"), false);
+        }
+        const old = await target.readFile();
+        const oldHash = createHash("sha256").update(old).digest("hex");
+        if (oldHash !== payload.hash) {
+          await target.close();
+          res.statusCode = 409;
+          res.setHeader("Content-Type", "application/json; charset=utf-8");
+          res.setHeader("Cache-Control", "no-store");
+          return res.end(JSON.stringify({ error: "conflict", hash: oldHash }));
+        }
+        const latest = await lstat(targetPath);
+        if (!latest.isFile() || latest.dev !== stat.dev || latest.ino !== stat.ino) {
+          await target.close();
+          return htmlResponse(res, 409, renderErrorPage(409, "File changed; reload before saving"), false);
+        }
+        await target.close();
+        const temporary = path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${randomBytes(12).toString("hex")}.tmp`);
+        try {
+          const replacement = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, stat.mode & 0o777);
+          try { await replacement.writeFile(payload.content, "utf8"); await replacement.sync(); }
+          finally { await replacement.close(); }
+          const check = await lstat(targetPath);
+          if (!check.isFile() || check.dev !== stat.dev || check.ino !== stat.ino) {
+            return htmlResponse(res, 409, renderErrorPage(409, "File changed; reload before saving"), false);
+          }
+          await rename(temporary, targetPath);
+        } finally { await unlink(temporary).catch(() => {}); }
+        const newHash = createHash("sha256").update(payload.content, "utf8").digest("hex");
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        return res.end(JSON.stringify({ hash: newHash }));
+      }
       let current = root;
       for (const segment of segments) {
         current = path.join(current, segment);
@@ -226,12 +321,19 @@ export function createFileBrowserMiddleware(
         if (text === null) return htmlResponse(res, 415, renderErrorPage(415, "This file is not a supported text file"), head);
 
         const language = languageForFilename(name);
+        const editable = [".md", ".markdown"].includes(path.extname(name).toLowerCase());
+        const editToken = editable ? csrf(relative) : undefined;
+        if (editToken) {
+          res.setHeader("Set-Cookie", `pages_edit_csrf=${editToken}; Path=${ROUTE}/; SameSite=Strict; HttpOnly`);
+        }
         return htmlResponse(res, 200, renderSourceView({
           name,
           breadcrumbs: breadcrumbs(segments.slice(0, -1)),
 
           language,
           source: text,
+          editable,
+          editToken,
           previewUrl: resolvePreviewUrl?.(path.relative(root, targetPath)),
         }), head);
       }

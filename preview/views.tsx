@@ -84,12 +84,16 @@ export function SourceView({
   language,
   source,
   previewUrl,
+  editable = false,
+  editToken,
 }: {
   name: string;
   breadcrumbs: Breadcrumb[];
   language: string;
   source: string;
   previewUrl?: string;
+  editable?: boolean;
+  editToken?: string;
 }) {
   return (
     <PageLayout title={name} sourceView>
@@ -101,6 +105,7 @@ export function SourceView({
       <Breadcrumbs items={[...breadcrumbs, { label: name }]} />
 
       <pre><code class={`language-${language}`}>{source}</code></pre>
+      {editable && editToken && <meta name="pages-edit-token" content={editToken} />}
       <script type="module" src={`${ASSET_ROUTE}/dist/microlighter.min.js`} />
     </PageLayout>
   );
