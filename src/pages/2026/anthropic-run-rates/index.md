@@ -4,8 +4,6 @@ date: 2026-10-01
 layout: chart-page.njk
 ---
 
-Values and dates are approximate or lower bounds where reported that way.
-
 ## Data points and sources
 
 | Date represented | Annual run rate | Source |
