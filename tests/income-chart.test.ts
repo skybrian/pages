@@ -52,15 +52,20 @@ for (const chart of definition.charts) {
     assert.equal(Number(mobile.getAttribute("height")), 400, "mobile gets sufficient space for axes and plot");
     assert.ok(desktop.textContent?.includes(chart.id === "counts" ? "2024: 134.8M total" : "2024: 100%"),
       "final-year annotation remains visible");
-    assert.ok(!mobile.textContent?.includes("Low-income"), "dense in-area labels are omitted on mobile");
-    const mobileLegend = mobile.querySelector('[aria-label="Income bands"]');
-    assert.ok(mobileLegend);
-    assert.deepEqual(
-      [...mobileLegend.querySelectorAll("text")].map((label) => label.textContent),
-      ["Under $35k", "$35k–$99,999", "$100k+"],
-    );
-    assert.equal(mobileLegend.querySelectorAll("rect").length, 3, "each threshold has a matching color swatch");
-    assert.equal(desktop.querySelector('[aria-label="Income bands"]'), null, "desktop chart presentation remains unchanged");
+    for (const [width, mode] of [[320, "static"], [560, "static"], [896, "static"], [940, "preview"], [360, "interactive"]] as const) {
+      const svg = chart.render(rows, { document, width, height: 526, mode });
+      const labels = svg.querySelectorAll('g[aria-label="text"] text');
+      for (const [band, range] of [
+        ["Low-income", "Under $35,000"],
+        ["Middle-income", "$35,000–$99,999"],
+        ["High-income", "$100,000 or more"],
+      ]) {
+        const label = [...labels].find((text) => text.textContent?.includes(band));
+        assert.ok(label, `${band} is directly labeled at width ${width} in ${mode} mode`);
+        assert.deepEqual([...label.querySelectorAll("tspan")].map((line) => line.textContent), [band, range]);
+      }
+      assert.equal(svg.querySelector('[aria-label="Income bands"]'), null, "ranges are in the areas, not a separate legend");
+    }
     const no2004 = chart.render(rows.filter((row) => row.year !== 2004), {
       document, width: 940, height: 526, mode: "preview",
     });

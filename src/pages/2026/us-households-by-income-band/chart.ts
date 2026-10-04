@@ -18,9 +18,9 @@ interface BandRow {
 }
 
 const bands: Array<{ key: keyof Pick<IncomeRow, "low" | "middle" | "high">; band: Band; label: string; fill: string }> = [
-  { key: "low", band: "Low-income", label: "Under $35k", fill: "#34b7f1" },
-  { key: "middle", band: "Middle-income", label: "$35k–$99,999", fill: "#0095d9" },
-  { key: "high", band: "High-income", label: "$100k+", fill: "#005b87" },
+  { key: "low", band: "Low-income", label: "Under $35,000", fill: "#34b7f1" },
+  { key: "middle", band: "Middle-income", label: "$35,000–$99,999", fill: "#0095d9" },
+  { key: "high", band: "High-income", label: "$100,000 or more", fill: "#005b87" },
 ];
 
 function parseData(value: unknown): IncomeRow[] {
@@ -57,9 +57,9 @@ function renderStackedArea(
   const compact = width < 600;
   const chartHeight = compact ? Math.max(height, 400) : height;
   let cumulative = 0;
-  const labelMarks = bands.map(({ key, band }) => {
+  const labelMarks = bands.map(({ key, band, label }) => {
     const amount = shares ? labelYear[key] / labelYear.total * 100 : labelYear[key];
-    const mark = { year: compact ? labelYear.year : labelYear.year + 1, value: cumulative + amount / 2, label: band };
+    const mark = { year: compact ? labelYear.year : labelYear.year + 1, value: cumulative + amount / 2, label: `${band}\n${label}`, textFill: key === "low" ? "#08394f" : "white" };
     cumulative += amount;
     return mark;
   });
@@ -84,10 +84,10 @@ function renderStackedArea(
       title: (d: BandRow) => `${d.year}\n${d.band}: ${d.value.toFixed(1)}${shares ? "%" : "M households"}`,
     }))] : []),
     Plot.ruleY(shares ? [0, 20, 40, 60, 80, 100] : [0, 20, 40, 60, 80, 100, 120, 140], { stroke: "#d7d7d7" }),
-    ...(compact ? [] : [Plot.text(
+    Plot.text(
       labelMarks,
-      { x: "year", y: "value", text: "label", fill: "white", fontSize: 13, fontWeight: 700, textAnchor: "start" },
-    )]),
+      { x: "year", y: "value", text: "label", fill: "textFill", fontSize: compact ? 10 : 13, fontWeight: 700, textAnchor: compact ? "middle" : "start" },
+    ),
     Plot.text(
       latest ? [{ year: 2023, value: shares ? 3 : 5, label: `${latest.year}: ${shares ? "100%" : `${latest.total.toFixed(1)}M total`}` }] : [],
       { x: "year", y: "value", text: "label", textAnchor: "end", fontWeight: 700 },
@@ -99,7 +99,7 @@ function renderStackedArea(
     height: chartHeight,
     marginLeft: compact ? 48 : 76,
     marginRight: compact ? 24 : 70,
-    marginTop: compact ? 90 : 30,
+    marginTop: 30,
     marginBottom: 44,
     x: { domain: [1967, 2024], ticks: compact ? [1970, 1990, 2010, 2024] : [1970, 1980, 1990, 2000, 2010, 2020, 2024], tickFormat: (d) => `${d}`, label: null },
     y: {
@@ -113,32 +113,6 @@ function renderStackedArea(
     marks,
   }) as SVGSVGElement;
   svg.style.fontSize = mode === "preview" ? "16px" : "10px";
-  if (compact) {
-    const ns = "http://www.w3.org/2000/svg";
-    const legend = document.createElementNS(ns, "g");
-    legend.setAttribute("role", "group");
-    legend.setAttribute("aria-label", "Income bands");
-    legend.setAttribute("font-size", "10");
-    legend.setAttribute("font-family", "system-ui, sans-serif");
-    for (const [index, { label, fill }] of bands.entries()) {
-      const y = 30 + index * 18;
-      const swatch = document.createElementNS(ns, "rect");
-      swatch.setAttribute("x", "48");
-      swatch.setAttribute("y", String(y - 9));
-      swatch.setAttribute("width", "10");
-      swatch.setAttribute("height", "10");
-      swatch.setAttribute("fill", fill);
-      legend.append(swatch);
-      const text = document.createElementNS(ns, "text");
-      text.setAttribute("x", "66");
-      text.setAttribute("y", String(y));
-      text.setAttribute("text-anchor", "start");
-      text.setAttribute("fill", "#111");
-      text.textContent = label;
-      legend.append(text);
-    }
-    svg.append(legend);
-  }
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", shares
     ? "Stacked area chart of household shares by income band from 1967 to 2024."
