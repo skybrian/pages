@@ -6,6 +6,63 @@ import { build } from "esbuild";
 import { tsImport } from "tsx/esm/api";
 import { JSDOM } from "jsdom";
 import sharp from "sharp";
+import { CHART_LAYOUTS, chartSize } from "../src/charts/sizing.js";
+
+/** @param {string} chartPath */
+async function loadChart(chartPath) {
+  /** @type {{ default: any }} */
+  const loaded = await tsImport(pathToFileURL(resolve(chartPath)).href, import.meta.url);
+  const definition = loaded.default?.default ?? loaded.default;
+  if (!definition || typeof definition.parseData !== "function" || !Array.isArray(definition.charts) || !definition.charts.length) {
+    throw new Error(`${chartPath} must default-export a chart definition.`);
+  }
+  const data = definition.parseData(JSON.parse(await readFile(join(dirname(chartPath), "data.json"), "utf8")));
+  return { definition, data };
+}
+
+/** Inline, accessible charts rendered with the page's fonts, not social-card fonts.
+ * @param {string} inputPath
+ * @param {"charts" | "tabs"} part
+ */
+export async function renderInitialCharts(inputPath, part = "charts") {
+  const { definition, data } = await loadChart(join(dirname(inputPath), "chart.ts"));
+  const chart = definition.charts[0];
+  const dom = new JSDOM("<!doctype html><html><body></body></html>");
+  try {
+    if (part === "tabs") {
+      const tabs = dom.window.document.createElement("div");
+      tabs.className = "chart-tabs";
+      tabs.setAttribute("role", "tablist");
+      tabs.setAttribute("aria-label", "Chart views");
+      tabs.setAttribute("data-chart-tabs", "");
+      tabs.hidden = definition.charts.length < 2;
+      if (!tabs.hidden) {
+        definition.charts.forEach(/** @param {any} item @param {number} index */ (item, index) => {
+          const button = dom.window.document.createElement("button");
+          button.type = "button";
+          button.disabled = true;
+          button.setAttribute("role", "tab");
+          button.setAttribute("aria-selected", String(index === 0));
+          button.textContent = item.label;
+          tabs.append(button);
+        });
+      }
+      return tabs.outerHTML;
+    }
+    return CHART_LAYOUTS.map((layout) => {
+      const svg = chart.render(data, {
+        document: dom.window.document, ...chartSize(layout.minWidth), mode: "static",
+      });
+      if (svg.namespaceURI !== "http://www.w3.org/2000/svg") throw new Error(`${inputPath} must render an SVG element.`);
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", chart.alt);
+      svg.setAttribute("focusable", "false");
+      return `<div class="chart-static chart-static-${layout.name}">${svg.outerHTML}</div>`;
+    }).join("\n");
+  } finally {
+    dom.window.close();
+  }
+}
 
 /** @param {string} directory @returns {Promise<Array<[string, string]>>} */
 async function findChartEntries(directory) {
@@ -37,14 +94,7 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
   const entryPoints = {};
   try {
     for (const [name, chartPath] of entries) {
-      const pageDirectory = dirname(chartPath);
-      /** @type {{ default: any }} */
-      const loaded = await tsImport(pathToFileURL(resolve(chartPath)).href, import.meta.url);
-      const definition = loaded.default?.default ?? loaded.default;
-      if (!definition || typeof definition.parseData !== "function" || !Array.isArray(definition.charts) || !definition.charts.length) {
-        throw new Error(`${chartPath} must default-export a chart definition.`);
-      }
-      const data = definition.parseData(JSON.parse(await readFile(join(pageDirectory, "data.json"), "utf8")));
+      const { definition, data } = await loadChart(chartPath);
       const preview = definition.charts.find(/** @param {any} chart */ (chart) => chart.id === (definition.previewChart ?? definition.charts[0].id));
       if (!preview) throw new Error(`${chartPath} has an invalid previewChart.`);
       const dom = new JSDOM("<!doctype html><html><body></body></html>");

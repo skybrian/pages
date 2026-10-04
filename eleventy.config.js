@@ -1,10 +1,10 @@
 import { fileURLToPath } from "node:url";
-import { buildChartBundles } from "./scripts/build-charts.js";
+import { buildChartBundles, renderInitialCharts } from "./scripts/build-charts.js";
 
 /**
  * @typedef {{
  *   addPassthroughCopy: (source: string | Record<string, string>, options?: { mode: "html-relative" }) => void,
- *   addFilter: (name: string, callback: (...values: any[]) => string) => void,
+ *   addFilter: (name: string, callback: (...values: any[]) => string | Promise<string>) => void,
  *   addGlobalData: (name: string, value: unknown) => void,
  *   addWatchTarget: (target: string) => void,
  *   on: (event: string, callback: (eventArgs: {
@@ -24,12 +24,14 @@ export default async function (eleventyConfig) {
   eleventyConfig.addGlobalData("previewMode", previewMode);
   eleventyConfig.addGlobalData("previewRibbonStyles", PREVIEW_RIBBON_STYLES);
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
+  eleventyConfig.addFilter("initialCharts", renderInitialCharts);
   const previewUrls = createPreviewUrlLookup(fileURLToPath(new URL(".", import.meta.url)));
 
   // Overlapping narrow Chokidar globs can omit Markdown from watched entries.
   // Watch the source tree together, including chart TS and data files.
   eleventyConfig.addWatchTarget("src");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
+  eleventyConfig.addWatchTarget("src/charts");
   eleventyConfig.on("eleventy.after", ({ directories, outputMode, results }) => {
     previewUrls.refresh(results ?? []);
     return buildChartBundles({ siteOutputDirectory: directories.output, outputMode });

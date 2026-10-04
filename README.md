@@ -7,6 +7,13 @@ One-off pages and charts for https://pages.skybrian.com.
 Run `npm run typecheck` to check TypeScript and JavaScript types without
 emitting files. To run the build, use `npm run build`.
 
+Chart pages include build-time inline SVGs, with compact, medium, and wide
+layouts selected by CSS container queries. JavaScript uses the same sizing tiers
+to add interactivity without changing the chart's fonts or geometry on load.
+The PNGs in `assets/charts/` are for social-sharing previews only. Keep the
+container-query thresholds in `src/assets/style.css` aligned with
+`src/charts/sizing.js`.
+
 When running the preview server with `npm run dev`, open
 `/admin/files/` to browse the current worktree. Preview output goes to `_preview/`,
 separate from production builds in `_site/`, so running `npm run build` does not

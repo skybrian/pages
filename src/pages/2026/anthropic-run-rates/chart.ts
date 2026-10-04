@@ -34,7 +34,7 @@ export default defineChartPage<Point[]>({
     render(data, { document, width, height, mode }) {
       const points = data.map((d) => ({ ...d, dateValue: new Date(`${d.date}T00:00:00Z`) }));
       const compact = width < 560;
-      const renderHeight = mode === "interactive" ? Math.max(height, 400) : height;
+      const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
       const svg = Plot.plot({
         document, width, height: renderHeight,
         marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,

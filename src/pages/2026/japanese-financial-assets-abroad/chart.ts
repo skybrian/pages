@@ -58,7 +58,7 @@ export default defineChartPage<Row[]>({
       const marginTop = compact ? 46 : 80;
       const marginLeft = compact ? 48 : 95;
       const marginRight = compact ? 24 : 48;
-      const renderHeight = mode === "interactive" ? Math.max(height, 420) : height;
+      const renderHeight = mode !== "preview" ? Math.max(height, 420) : height;
       const marginBottom = compact ? Math.min(renderHeight * 0.55, 42 + legendRows * 18) : 90;
       const svg = Plot.plot({
         document, width, height: renderHeight,

@@ -49,9 +49,19 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 .chart-tabs[hidden] { display: none; }
 .chart-tabs button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.5rem 0.8rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .chart-tabs button[aria-selected="true"] { color: #fff; border-color: #245a9a; background: #245a9a; }
-.chart-root { min-height: 18rem; }
+.chart-root { min-height: 18rem; container-type: inline-size; }
 .chart-root svg, .chart-root img { width: 100%; height: auto; }
-.chart-root[aria-busy="true"] { opacity: 0.8; }
+.chart-static { display: none; }
+.chart-static-compact { display: block; }
+/* Keep these thresholds aligned with src/charts/sizing.js. */
+@container (min-width: 500px) {
+  .chart-static-compact { display: none; }
+  .chart-static-medium { display: block; }
+}
+@container (min-width: 760px) {
+  .chart-static-medium { display: none; }
+  .chart-static-wide { display: block; }
+}
 .chart-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 1.15rem; font-size: 0.95rem; }
 .chart-actions button { flex-shrink: 0; border: 1px solid #777; border-radius: 0.35rem; padding: 0.45rem 0.75rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .chart-actions button:disabled { cursor: default; opacity: 0.55; }

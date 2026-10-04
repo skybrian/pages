@@ -1,4 +1,5 @@
 import type { ChartDefinition } from "./definition.js";
+import { chartSize } from "./sizing.js";
 
 export interface ChartPageOptions {
   dataUrl?: string;
@@ -69,11 +70,9 @@ export function mountChartPage<Data>(
     root.setAttribute("aria-busy", "true");
     try {
       const data = await loadData();
-      const width = Math.max(280, Math.floor(root.clientWidth || 960));
       const svg = active.render(data, {
         document: root.ownerDocument,
-        width,
-        height: Math.max(400, Math.round(width * 0.56)),
+        ...chartSize(root.getBoundingClientRect().width || root.clientWidth || 960),
         mode: "interactive",
       });
       svg.setAttribute("role", "img");
@@ -84,6 +83,14 @@ export function mountChartPage<Data>(
       if (copyButton) copyButton.disabled = false;
     } catch (error) {
       root.setAttribute("aria-busy", "false");
+      if (root.querySelector("svg")) {
+        // Keep the build-time chart useful when enhancement fails.
+        root.setAttribute("role", "region");
+        root.removeAttribute("aria-labelledby");
+        if (copyStatus) copyStatus.textContent = "Interactive chart unavailable; showing the static chart.";
+        if (copyButton) copyButton.disabled = false;
+        return;
+      }
       root.textContent = `Chart unavailable: ${error instanceof Error ? error.message : "Unable to load chart."}`;
       if (copyButton) copyButton.disabled = true;
     }

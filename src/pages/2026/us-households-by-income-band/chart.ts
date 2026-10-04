@@ -48,7 +48,7 @@ function toBandRows(data: IncomeRow[], shares: boolean): BandRow[] {
 
 function renderStackedArea(
   data: IncomeRow[],
-  { document, width, height, mode }: { document: Document; width: number; height: number; mode: "interactive" | "preview" },
+  { document, width, height, mode }: { document: Document; width: number; height: number; mode: "interactive" | "static" | "preview" },
   shares: boolean,
 ): SVGSVGElement {
   const values = toBandRows(data, shares);

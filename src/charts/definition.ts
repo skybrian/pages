@@ -3,7 +3,7 @@ export interface ChartRenderOptions {
   document: Document;
   width: number;
   height: number;
-  mode: "interactive" | "preview";
+  mode: "interactive" | "static" | "preview";
 }
 
 export interface ChartDefinition<Data = unknown> {

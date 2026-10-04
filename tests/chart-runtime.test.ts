@@ -81,7 +81,7 @@ describe("chart runtime", () => {
       assert.equal(root.getAttribute("role"), "tabpanel");
       assert.equal(root.getAttribute("aria-labelledby"), "chart-tab-second");
       assert.equal(controls.hidden, false);
-      assert.deepEqual(renderedSize, { width: 350, height: 400 });
+      assert.deepEqual(renderedSize, { width: 320, height: 400 });
       assert.equal(fetches, 1);
 
       const beforeResize = renderCount;
@@ -170,6 +170,38 @@ describe("chart runtime", () => {
       await wait();
       assert.equal(root.textContent, "Chart unavailable: Could not load chart data (HTTP 503).");
       assert.equal(copyButton.disabled, true);
+    } finally {
+      restore();
+      dom.window.close();
+    }
+  });
+
+  it("retains the initial SVG while loading and if interactive enhancement fails", async () => {
+    const dom = new JSDOM(`<div data-chart-root><svg role="img" aria-label="Static chart"><text>Initial chart</text></svg></div>
+      <button data-copy-svg></button><span data-copy-status role="status"></span>`,
+    { url: "https://example.test/" });
+    const restore = setGlobals(dom);
+    let failRequest!: (value: unknown) => void;
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      value: () => new Promise(resolve => { failRequest = resolve; }),
+    });
+    try {
+      const document = dom.window.document;
+      const root = document.querySelector<HTMLElement>("[data-chart-root]")!;
+      const initial = root.querySelector("svg");
+      mountChartPage({
+        parseData: (value: unknown) => value,
+        charts: [{ id: "main", label: "Main", alt: "Chart", render: () =>
+          document.createElementNS("http://www.w3.org/2000/svg", "svg") }],
+      });
+      assert.equal(root.querySelector("svg"), initial);
+      failRequest({ ok: false, status: 503 });
+      await wait();
+      assert.equal(root.querySelector("svg"), initial);
+      assert.equal(root.getAttribute("aria-busy"), "false");
+      assert.equal(document.querySelector<HTMLButtonElement>("[data-copy-svg]")?.disabled, false);
+      assert.match(document.querySelector("[data-copy-status]")?.textContent ?? "", /showing the static chart/);
     } finally {
       restore();
       dom.window.close();

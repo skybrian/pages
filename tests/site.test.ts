@@ -77,6 +77,9 @@ describe("year-based page URLs", () => {
           assert.equal(card?.getAttribute("aria-labelledby"), "chart-heading");
           assert.equal(card?.querySelector("header")?.nextElementSibling?.className, "chart-tabs",
             "the chart controls follow the heading without an automatic subtitle");
+          const initialTabs = card?.querySelector<HTMLElement>("[data-chart-tabs]");
+          assert.equal(initialTabs?.hidden, slug !== "us-households-by-income-band",
+            "reserve multi-chart tab space before JavaScript loads");
           const description = document.querySelector('meta[name="description"]')?.getAttribute("content");
           if (slug !== "anthropic-run-rates" && slug !== "kernel-cve-fixes") {
             assert.ok(description, "retain the page description as metadata");
@@ -84,8 +87,15 @@ describe("year-based page URLs", () => {
             assert.ok(homepage.includes(description), "retain the description in homepage summaries");
             assert.ok(!document.body.textContent?.includes(description), "do not repeat metadata as visible prose");
           }
-          assert.ok(document.querySelector("[data-chart-root] img")?.getAttribute("alt"),
-            "retain the fallback chart's accessible description");
+          assert.equal(document.querySelector("[data-chart-root] img"), null,
+            "the on-page chart must not use the social preview PNG");
+          const staticCharts = document.querySelectorAll("[data-chart-root] .chart-static svg");
+          assert.equal(staticCharts.length, 3, "pre-render compact, medium, and wide SVG layouts");
+          for (const svg of staticCharts) {
+            assert.equal(svg.getAttribute("role"), "img");
+            assert.ok(svg.getAttribute("aria-label"));
+            assert.ok(svg.querySelector("text"), "the initial chart already includes its labels");
+          }
           const actions = card?.querySelector(".chart-actions");
           assert.equal(actions?.firstElementChild?.getAttribute("href"), "./data.json");
           assert.ok(actions?.lastElementChild?.hasAttribute("data-copy-svg"),
