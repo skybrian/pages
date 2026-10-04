@@ -1,6 +1,5 @@
 import { fileURLToPath } from "node:url";
 import { buildChartBundles } from "./scripts/build-charts.js";
-import { getMarkdownWatchTargets } from "./preview/markdown-watch.js";
 
 /**
  * @typedef {{
@@ -27,16 +26,10 @@ export default async function (eleventyConfig) {
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
   const previewUrls = createPreviewUrlLookup(fileURLToPath(new URL(".", import.meta.url)));
 
-  // Chart TS is bundled after Eleventy has written the site's output.
-  eleventyConfig.addWatchTarget("src/pages/**/*.ts");
-  eleventyConfig.addWatchTarget("src/pages/**/data.json");
-  eleventyConfig.addWatchTarget("src/charts/**/*.ts");
+  // Overlapping narrow Chokidar globs can omit Markdown from watched entries.
+  // Watch the source tree together, including chart TS and data files.
+  eleventyConfig.addWatchTarget("src");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
-  // Chokidar 3's overlapping recursive globs can omit existing Markdown
-  // templates, so add each current template as an explicit watch path.
-  for (const target of await getMarkdownWatchTargets("src")) {
-    eleventyConfig.addWatchTarget(target);
-  }
   eleventyConfig.on("eleventy.after", ({ directories, outputMode, results }) => {
     previewUrls.refresh(results ?? []);
     return buildChartBundles({ siteOutputDirectory: directories.output, outputMode });
