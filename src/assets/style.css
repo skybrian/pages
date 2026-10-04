@@ -27,7 +27,24 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 .page-list a { font-weight: 600; }
 .page-list time { display: block; }
 .page-list p { margin: 0.4rem 0 0; }
-.chart-page { margin: 2rem 0; }
+.chart-layout {
+  color-scheme: light;
+  color: #172323;
+  background: #f6f7f2;
+}
+.chart-layout main { max-width: 62rem; padding: 2rem 1rem; }
+.chart-layout a { color: #07594f; }
+.chart-page {
+  padding: clamp(1rem, 4vw, 2rem);
+  border: 1px solid #dce4df;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 12px 35px rgb(25 55 45 / 7%);
+  margin-bottom: 2rem;
+}
+.chart-page header { margin-bottom: 1rem; }
+.chart-page h1 { font-size: 1.15rem; margin: 0; }
+.chart-page > p { margin: 1.15rem 0 0; font-size: 0.95rem; }
 .chart-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .chart-tabs[hidden] { display: none; }
 .chart-tabs button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.5rem 0.8rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
@@ -41,6 +58,8 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 .chart-actions [role="status"] { color: #626262; font-size: 0.9rem; }
 @media (max-width: 480px) {
   main { padding-top: 1.5rem; }
+  .chart-layout main { padding: 1.5rem 0.625rem; }
+  .chart-page { border-radius: 0.7rem; }
 }
 @media (prefers-color-scheme: dark) {
   :root { color: #e6e6e0; background: #1b1b1a; }

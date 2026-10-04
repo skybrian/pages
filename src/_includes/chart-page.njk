@@ -16,12 +16,11 @@
   <meta property="og:image:alt" content="{{ description | default(title) | escape }}">
   <link rel="stylesheet" href="/assets/style.css">
 </head>
-<body>
+<body class="chart-layout">
   {% include "preview-ribbon.njk" %}
   <main>
-    <nav aria-label="Home"><a href="/">← All pages</a></nav>
-    <header><h1>{{ title | escape }}</h1></header>
-    <section class="chart-page" aria-label="Interactive chart">
+    <section class="chart-page" aria-labelledby="chart-heading">
+      <header><h1 id="chart-heading">{{ title | escape }}</h1></header>
       <div class="chart-tabs" role="tablist" aria-label="Chart views" data-chart-tabs hidden></div>
       <div class="chart-root" data-chart-root aria-busy="true" role="region" aria-label="{{ title | escape }}">
         <img src="/assets/charts/{{ page.fileSlug }}.png" alt="{{ description | default(title) | escape }}" width="1200" height="630">

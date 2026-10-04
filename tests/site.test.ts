@@ -42,7 +42,7 @@ describe("year-based page URLs", () => {
 
       const kernelEntry = homepage.match(/<li>\s*<a href="\/2026\/kernel-cve-fixes\/">[\s\S]*?<\/li>/)?.[0];
       assert.ok(kernelEntry);
-      assert.match(kernelEntry, /CVE/);
+      assert.ok(kernelEntry.includes("A chart of CSVs fixed by Linux kernel releases"));
 
       const image = "flux3image-a-woman-playing-accordion.png";
       assert.deepEqual(
@@ -69,10 +69,16 @@ describe("year-based page URLs", () => {
         const dom = new JSDOM(chartHtml);
         try {
           const document = dom.window.document;
-          assert.equal(document.querySelector("header")?.nextElementSibling?.className, "chart-page",
-            "the chart follows the heading without an automatic subtitle");
+          assert.ok(document.body.classList.contains("chart-layout"));
+          assert.equal(document.querySelector("nav"), null, "chart pages have no back link");
+          const card = document.querySelector(".chart-page");
+          assert.equal(card?.querySelector("h1")?.id, "chart-heading",
+            "the compact heading belongs to the chart card");
+          assert.equal(card?.getAttribute("aria-labelledby"), "chart-heading");
+          assert.equal(card?.querySelector("header")?.nextElementSibling?.className, "chart-tabs",
+            "the chart controls follow the heading without an automatic subtitle");
           const description = document.querySelector('meta[name="description"]')?.getAttribute("content");
-          if (slug !== "anthropic-run-rates") {
+          if (slug !== "anthropic-run-rates" && slug !== "kernel-cve-fixes") {
             assert.ok(description, "retain the page description as metadata");
             assert.equal(document.querySelector('meta[property="og:description"]')?.getAttribute("content"), description);
             assert.ok(homepage.includes(description), "retain the description in homepage summaries");

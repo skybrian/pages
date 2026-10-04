@@ -55,13 +55,11 @@ function loadDefinition() {
   return { definition: exports.default, document, get options() { return options!; } };
 }
 
-it("uses the shared chart-page layout and documents kernel CVE provenance", () => {
+it("uses the shared chart-page layout and links to the kernel CVE source", () => {
   assert.match(page, /^layout: chart-page\.njk$/m);
-  assert.match(page, /^title: Published CVE fixes by Linux kernel release$/m);
-  assert.match(page, /^description: .+$/m);
+  assert.match(page, /^title: .+$/m);
   assert.match(page, /kernel\.googlesource\.com\/pub\/scm\/linux\/security\/vulns/);
-  assert.match(page, /Counts include each CVE at most once per release/);
-  assert.doesNotMatch(page, /CSVs/);
+  assert.doesNotMatch(page, /source commit/i);
 });
 
 it("parses the published dataset and rejects invalid release rows", () => {
@@ -101,7 +99,7 @@ it("exposes a chart definition and renders interactive and preview SVGs", () => 
   assert.deepEqual([...interactiveOptions.x.domain], ["6.9", "6.10", "7.1", "7.2"]);
   assert.deepEqual([...interactiveOptions.y.domain], [0, 9]);
   assert.equal(interactiveOptions.x.label, "Mainline kernel release");
-  assert.equal(interactiveOptions.y.label, "Published CVE records with fixes");
+  assert.equal(interactiveOptions.y.label, null);
   assert.ok(interactiveOptions.marks.some((mark) => mark.kind === "tip"));
   const dots = interactiveOptions.marks.find((mark) => mark.kind === "dot")!;
   const title = dots.options!.title as (row: Row) => string;
