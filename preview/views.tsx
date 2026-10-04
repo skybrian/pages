@@ -4,7 +4,7 @@ import { PREVIEW_RIBBON_STYLES } from "./ribbon.js";
 
 const ASSET_ROUTE = "/admin/assets/microlighter";
 const PAGE_STYLES = "body{max-width:72rem;margin:2rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#24292f}ul{list-style:none;padding-left:0}";
-const SOURCE_STYLES = "pre{overflow:auto;padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff}code{font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}";
+const SOURCE_STYLES = "pre{padding:1rem;border:1px solid #d0d7de;border-radius:6px;background:#fff;white-space:pre-wrap;overflow-wrap:anywhere}code{font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:inherit}";
 
 export type Breadcrumb = {
   label: string;
