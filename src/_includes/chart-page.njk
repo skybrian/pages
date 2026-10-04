@@ -26,10 +26,10 @@
         <img src="/assets/charts/{{ page.fileSlug }}.png" alt="{{ description | default(title) | escape }}" width="1200" height="630">
       </div>
       <div class="chart-actions">
+        <a href="./data.json" target="_blank" rel="noopener">View data (JSON)</a>
         <button type="button" data-copy-svg disabled>Copy SVG</button>
-        <span data-copy-status role="status" aria-live="polite"></span>
       </div>
-      <p><a href="./data.json" target="_blank" rel="noopener">View data (JSON)</a></p>
+      <span class="chart-copy-status" data-copy-status role="status" aria-live="polite"></span>
     </section>
     {{ content | safe }}
   </main>

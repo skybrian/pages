@@ -86,6 +86,12 @@ describe("year-based page URLs", () => {
           }
           assert.ok(document.querySelector("[data-chart-root] img")?.getAttribute("alt"),
             "retain the fallback chart's accessible description");
+          const actions = card?.querySelector(".chart-actions");
+          assert.equal(actions?.firstElementChild?.getAttribute("href"), "./data.json");
+          assert.ok(actions?.lastElementChild?.hasAttribute("data-copy-svg"),
+            "the copy button shares the footer row with the data link");
+          assert.ok(actions?.nextElementSibling?.hasAttribute("data-copy-status"),
+            "copy feedback sits below the footer without shifting its controls");
         } finally {
           dom.window.close();
         }
