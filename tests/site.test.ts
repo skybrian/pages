@@ -96,7 +96,18 @@ describe("year-based page URLs", () => {
             assert.ok(svg.getAttribute("aria-label"));
             assert.ok(svg.querySelector("text"), "the initial chart already includes its labels");
           }
-          const actions = card?.querySelector(".chart-actions");
+          const notes = card?.querySelector(".chart-notes");
+          assert.ok(notes?.textContent?.includes("Source"), "chart sources belong inside the rounded card");
+          assert.equal(card?.querySelector("[data-chart-root]")?.nextElementSibling, notes,
+            "chart notes follow the chart inside the card");
+          if (slug === "japanese-financial-assets-abroad") {
+            assert.ok(notes?.textContent?.includes("BPM5 to BPM6"), "retain the methodology note inside the card");
+            assert.ok(notes?.querySelector('a[href="https://www.mof.go.jp/english/policy/international_policy/reference/iip/index.htm"]'),
+              "retain the source link");
+          }
+          const actions = document.querySelector(".chart-actions");
+          assert.equal(card?.querySelector(".chart-actions"), null, "chart actions are outside the rounded card");
+          assert.equal(card?.nextElementSibling, actions, "chart actions sit directly below the card");
           assert.equal(actions?.firstElementChild?.getAttribute("href"), "./data.json");
           assert.ok(actions?.lastElementChild?.hasAttribute("data-copy-svg"),
             "the copy button shares the footer row with the data link");

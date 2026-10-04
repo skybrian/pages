@@ -25,13 +25,13 @@
       <div class="chart-root" data-chart-root aria-busy="false" role="region" aria-label="{{ title | escape }}">
         {{ page.inputPath | initialCharts | safe }}
       </div>
-      <div class="chart-actions">
-        <a href="./data.json" target="_blank" rel="noopener">View data (JSON)</a>
-        <button type="button" data-copy-svg disabled>Copy SVG</button>
-      </div>
-      <span class="chart-copy-status" data-copy-status role="status" aria-live="polite"></span>
+      <div class="chart-notes">{{ content | safe }}</div>
     </section>
-    {{ content | safe }}
+    <div class="chart-actions">
+      <a href="./data.json" target="_blank" rel="noopener">View data (JSON)</a>
+      <button type="button" data-copy-svg disabled>Copy SVG</button>
+    </div>
+    <span class="chart-copy-status" data-copy-status role="status" aria-live="polite"></span>
   </main>
   <script type="module" src="/assets/charts/{{ page.fileSlug }}.js"></script>
 </body>

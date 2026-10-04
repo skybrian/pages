@@ -40,10 +40,13 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
   border-radius: 1rem;
   background: #fff;
   box-shadow: 0 12px 35px rgb(25 55 45 / 7%);
-  margin-bottom: 2rem;
 }
 .chart-page header { margin-bottom: 1rem; }
 .chart-page h1 { font-size: 1.15rem; margin: 0; }
+.chart-notes { margin-top: 1rem; color: #52605b; font-size: 0.9rem; }
+.chart-notes > :first-child { margin-top: 0; }
+.chart-notes > :last-child { margin-bottom: 0; }
+.chart-notes:empty { display: none; }
 
 .chart-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .chart-tabs[hidden] { display: none; }
