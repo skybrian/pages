@@ -70,8 +70,14 @@ describe("year-based page URLs", () => {
         try {
           const document = dom.window.document;
           assert.ok(document.body.classList.contains("chart-layout"));
-          assert.equal(document.querySelector("nav"), null, "chart pages have no back link");
+          const backNav = document.querySelector("nav.chart-back");
+          assert.equal(backNav?.parentElement, document.querySelector("main"));
+          const backLink = backNav?.querySelector("a");
+          assert.equal(backLink?.getAttribute("href"), "/");
+          assert.equal(backLink?.getAttribute("aria-label"), "Back to index");
+          assert.equal(backLink?.textContent, "←");
           const card = document.querySelector(".chart-page");
+          assert.equal(backNav?.nextElementSibling, card, "the back arrow sits above the chart card");
           assert.equal(card?.querySelector("h1")?.id, "chart-heading",
             "the compact heading belongs to the chart card");
           assert.equal(card?.getAttribute("aria-labelledby"), "chart-heading");

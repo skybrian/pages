@@ -32,8 +32,12 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
   color: #172323;
   background: #f6f7f2;
 }
-.chart-layout main { max-width: 62rem; padding: 2rem 1rem; }
+.chart-layout main { position: relative; max-width: 62rem; padding: 2rem 1rem; }
 .chart-layout main a { color: #07594f; }
+.chart-back { position: absolute; top: 0; left: 1rem; margin: 0; }
+.chart-back a { display: flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; font-size: 1.25rem; line-height: 1; text-decoration: none; border-radius: 0.2rem; }
+.chart-back a:hover { background: #dce4df; }
+.chart-back a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .chart-page {
   padding: clamp(1rem, 4vw, 2rem);
   border: 1px solid #dce4df;
@@ -73,6 +77,7 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 @media (max-width: 480px) {
   main { padding-top: 1.5rem; }
   .chart-layout main { padding: 1.5rem 0.625rem; }
+  .chart-back { left: 0.625rem; }
   .chart-page { border-radius: 0.7rem; }
 }
 @media (prefers-color-scheme: dark) {

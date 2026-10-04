@@ -19,6 +19,9 @@
 <body class="chart-layout">
   {% include "preview-ribbon.njk" %}
   <main>
+    <nav class="chart-back" aria-label="Home">
+      <a href="/" aria-label="Back to index" title="Back to index">←</a>
+    </nav>
     <section class="chart-page" aria-labelledby="chart-heading">
       <header><h1 id="chart-heading">{{ title | escape }}</h1></header>
       {{ page.inputPath | initialCharts("tabs") | safe }}
