@@ -63,7 +63,8 @@ export default async function (eleventyConfig) {
   }
 
   return {
-    dir: { input: "src", output: "_site" },
+    // Production builds must not overwrite files being served by the preview.
+    dir: { input: "src", output: previewMode ? "_preview" : "_site" },
     templateFormats: ["md", "njk", "html"],
     // Leave chart code and template-like text in Markdown/HTML untouched.
     markdownTemplateEngine: false,

@@ -8,7 +8,9 @@ Run `npm run typecheck` to check TypeScript and JavaScript types without
 emitting files. To run the build, use `npm run build`.
 
 When running the preview server with `npm run dev`, open
-`/admin/files/` to browse the current worktree. This browser is registered only
+`/admin/files/` to browse the current worktree. Preview output goes to `_preview/`,
+separate from production builds in `_site/`, so running `npm run build` does not
+remove the preview ribbon or overwrite the served pages. This browser is registered only
 in Eleventy's serve mode; production builds do not emit admin pages or editor
 assets. It blocks symlinks rather than following them. Detected UTF-8 text
 files are displayed as escaped text in a separate HTML page; binary, invalid

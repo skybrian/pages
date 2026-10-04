@@ -5,7 +5,8 @@ import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { promisify } from "node:util";
 import { after, describe, it } from "node:test";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -25,15 +26,22 @@ describe("Eleventy preview file watching", () => {
     await symlink(path.join(projectRoot, "preview"), path.join(root, "preview"), "dir");
     await symlink(path.join(projectRoot, "scripts"), path.join(root, "scripts"), "dir");
     await copyFile(path.join(projectRoot, "eleventy.config.js"), path.join(root, "eleventy.config.js"));
+    await mkdir(path.join(root, "src/_includes"), { recursive: true });
+    await copyFile(
+      path.join(projectRoot, "src/_includes/preview-ribbon.njk"),
+      path.join(root, "src/_includes/preview-ribbon.njk"),
+    );
+    await writeFile(path.join(root, "src/_includes/test.njk"),
+      '{% include "preview-ribbon.njk" %}{{ content | safe }}');
     await writeFile(path.join(root, "package.json"), '{"type":"module"}\n');
     await writeFile(
       path.join(pageDirectory, "index.md"),
-      "---\npermalink: /sample/index.html\n---\n\nInitial content\n",
+      "---\nlayout: test.njk\npermalink: /sample/index.html\n---\n\nInitial content\n",
     );
     await writeFile(path.join(pageDirectory, "plot.ts"), "export const value = 1;\n");
     await writeFile(path.join(pageDirectory, "data.json"), '{"value":1}\n');
 
-    const output = path.join(root, "_site");
+    const output = path.join(root, "_preview");
     const port = await getFreePort();
     const child = spawn(
       process.execPath,
@@ -42,7 +50,7 @@ describe("Eleventy preview file watching", () => {
         "--serve",
         `--port=${port}`,
         `--config=${path.join(root, "eleventy.config.js")}`,
-        `--output=${output}`,
+
       ],
       {
         cwd: root,
@@ -62,12 +70,22 @@ describe("Eleventy preview file watching", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const htmlPath = path.join(output, "sample/index.html");
       assert.match(await readFile(htmlPath, "utf8"), /Initial content/);
+      assert.match(await readFile(htmlPath, "utf8"), /class="preview-ribbon"/);
+
+      await promisify(execFile)(process.execPath, [
+        path.join(projectRoot, "node_modules/@11ty/eleventy/cmd.cjs"),
+      ], { cwd: root, env: { ...process.env, ELEVENTY_RUN_MODE: "build" } });
+      const productionHtml = await readFile(path.join(root, "_site/sample/index.html"), "utf8");
+      assert.doesNotMatch(productionHtml, /class="preview-ribbon"/);
+      const previewHtml = await fetch(`http://localhost:${port}/sample/`).then(response => response.text());
+      assert.match(previewHtml, /class="preview-ribbon"/,
+        "a production build must not overwrite the running preview");
 
       for (const [index, content] of ["Atomic save one", "Atomic save two"].entries()) {
         const previousChanges = countChanges(logs, "src/pages/sample/index.md");
         await atomicReplace(
           path.join(pageDirectory, "index.md"),
-          `---\npermalink: /sample/index.html\n---\n\n${content}\n`,
+          `---\nlayout: test.njk\npermalink: /sample/index.html\n---\n\n${content}\n`,
         );
         await waitFor(
           child,
