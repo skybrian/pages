@@ -47,7 +47,7 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
 
 .chart-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .chart-tabs[hidden] { display: none; }
-.chart-tabs button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.5rem 0.8rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.chart-tabs button { border: 1px solid #777; border-radius: 0.35rem; padding: 0.25rem 0.5rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .chart-tabs button[aria-selected="true"] { color: #fff; border-color: #245a9a; background: #245a9a; }
 .chart-root { min-height: 18rem; container-type: inline-size; }
 .chart-root svg, .chart-root img { width: 100%; height: auto; }
@@ -63,7 +63,7 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
   .chart-static-wide { display: block; }
 }
 .chart-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 1.15rem; font-size: 0.95rem; }
-.chart-actions button { flex-shrink: 0; border: 1px solid #777; border-radius: 0.35rem; padding: 0.45rem 0.75rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.chart-actions button { flex-shrink: 0; border: 1px solid #777; border-radius: 0.35rem; padding: 0.25rem 0.5rem; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .chart-actions button:disabled { cursor: default; opacity: 0.55; }
 .chart-copy-status { display: block; color: #626262; font-size: 0.9rem; text-align: right; }
 .chart-copy-status:not(:empty) { margin-top: 0.5rem; }
