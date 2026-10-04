@@ -33,7 +33,7 @@ th, td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #bcbcb7; text-align: 
   background: #f6f7f2;
 }
 .chart-layout main { max-width: 62rem; padding: 2rem 1rem; }
-.chart-layout a { color: #07594f; }
+.chart-layout main a { color: #07594f; }
 .chart-page {
   padding: clamp(1rem, 4vw, 2rem);
   border: 1px solid #dce4df;
