@@ -185,6 +185,12 @@ social image, regardless of the selected tab; fragments do not select a differen
 social card. Invalid data or a broken preview fails the build. Builds use checked-in
 data and do not fetch external sources or require a browser.
 
+Chart rendering runs in a disposable worker per build. All chart imports share
+one TypeScript loader and dependency cache within that worker; terminating it
+after asset generation releases the cache and loader hooks. The next preview
+rebuild loads fresh chart code and transitive dependencies, without accumulating
+loader overhead in the preview server.
+
 ### Updating kernel CVE counts
 
 The extraction script lives at

@@ -25,6 +25,7 @@ describe("Eleventy preview file watching", () => {
     await symlink(path.join(projectRoot, "node_modules"), path.join(root, "node_modules"));
     await symlink(path.join(projectRoot, "preview"), path.join(root, "preview"), "dir");
     await symlink(path.join(projectRoot, "scripts"), path.join(root, "scripts"), "dir");
+    await symlink(path.join(projectRoot, "src/charts"), path.join(root, "src/charts"), "dir");
     await copyFile(path.join(projectRoot, "eleventy.config.js"), path.join(root, "eleventy.config.js"));
     await mkdir(path.join(root, "src/_includes"), { recursive: true });
     await copyFile(
@@ -32,7 +33,7 @@ describe("Eleventy preview file watching", () => {
       path.join(root, "src/_includes/preview-ribbon.njk"),
     );
     await writeFile(path.join(root, "src/_includes/test.njk"),
-      '{% include "preview-ribbon.njk" %}{{ content | safe }}');
+      '{% include "preview-ribbon.njk" %}{{ content | safe }}{{ page.inputPath | initialCharts | safe }}');
     await writeFile(path.join(root, "package.json"), '{"type":"module"}\n');
     await writeFile(
       path.join(pageDirectory, "index.md"),
@@ -40,6 +41,22 @@ describe("Eleventy preview file watching", () => {
     );
     await writeFile(path.join(pageDirectory, "plot.ts"), "export const value = 1;\n");
     await writeFile(path.join(pageDirectory, "data.json"), '{"value":1}\n');
+    const chartSource = (label: string) => `
+      import { value } from "./plot.ts";
+      export default {
+        parseData(data) { return data; },
+        charts: [{ id: "main", label: "Main", alt: "Test chart",
+          render(data, {document, width, height}) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+            const text = document.createElementNS(svg.namespaceURI, "text");
+            text.textContent = ${JSON.stringify(label)} + " " + value + "/" + data.value;
+            svg.append(text); return svg;
+          }
+        }]
+      };
+    `;
+    await writeFile(path.join(pageDirectory, "chart.ts"), chartSource("Chart"));
 
     const output = path.join(root, "_preview");
     const port = await getFreePort();
@@ -70,6 +87,7 @@ describe("Eleventy preview file watching", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const htmlPath = path.join(output, "sample/index.html");
       assert.match(await readFile(htmlPath, "utf8"), /Initial content/);
+      assert.match(await readFile(htmlPath, "utf8"), /Chart 1\/1/);
       assert.match(await readFile(htmlPath, "utf8"), /class="preview-ribbon"/);
 
       await promisify(execFile)(process.execPath, [
@@ -99,9 +117,10 @@ describe("Eleventy preview file watching", () => {
         assert.ok(countChanges(logs, "src/pages/sample/index.md") > previousChanges);
       }
 
-      for (const [filename, contents] of [
-        ["plot.ts", "export const value = 2;\n"],
-        ["data.json", '{"value":2}\n'],
+      for (const [filename, contents, expected] of [
+        ["plot.ts", "export const value = 2;\n", "Chart 2/1"],
+        ["data.json", '{"value":2}\n', "Chart 2/2"],
+        ["chart.ts", chartSource("Edited"), "Edited 2/2"],
       ]) {
         const relativePath = `src/pages/sample/${filename}`;
         const previousChanges = countChanges(logs, relativePath);
@@ -111,6 +130,9 @@ describe("Eleventy preview file watching", () => {
           () => countChanges(logs, relativePath) > previousChanges,
           () => logs,
         );
+        await waitFor(child, async () =>
+          (await readFile(htmlPath, "utf8").catch(() => "")).includes(expected!),
+        () => logs);
       }
     } finally {
       await stop(child);

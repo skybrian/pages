@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { buildChartBundles, renderInitialCharts } from "./scripts/build-charts.js";
+import { buildChartBundles, finishChartBuild, renderInitialCharts } from "./scripts/build-charts.js";
 
 /**
  * @typedef {{
@@ -31,7 +31,10 @@ export default async function (eleventyConfig) {
   // Watch the source tree together, including chart TS and data files.
   eleventyConfig.addWatchTarget("src");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
+  eleventyConfig.addWatchTarget("scripts/build-charts-worker.js");
   eleventyConfig.addWatchTarget("src/charts");
+  // Also reset after an aborted build, which may not reach eleventy.after.
+  eleventyConfig.on("eleventy.before", finishChartBuild);
   eleventyConfig.on("eleventy.after", ({ directories, outputMode, results }) => {
     previewUrls.refresh(results ?? []);
     return buildChartBundles({ siteOutputDirectory: directories.output, outputMode });
