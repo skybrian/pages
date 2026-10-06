@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { buildChartBundles, finishChartBuild, renderInitialCharts } from "./scripts/build-charts.js";
+import { chartVendors } from "./scripts/chart-vendor.js";
 
 /**
  * @typedef {{
@@ -22,6 +23,7 @@ export default async function (eleventyConfig) {
     await import("./preview/ribbon.js");
   const previewMode = isPreviewRunMode(process.env.ELEVENTY_RUN_MODE);
   eleventyConfig.addGlobalData("previewMode", previewMode);
+  eleventyConfig.addGlobalData("chartVendors", chartVendors);
   eleventyConfig.addGlobalData("previewRibbonStyles", PREVIEW_RIBBON_STYLES);
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
   eleventyConfig.addFilter("initialCharts", renderInitialCharts);
@@ -32,6 +34,7 @@ export default async function (eleventyConfig) {
   eleventyConfig.addWatchTarget("src");
   eleventyConfig.addWatchTarget("scripts/build-charts.js");
   eleventyConfig.addWatchTarget("scripts/build-charts-worker.js");
+  eleventyConfig.addWatchTarget("scripts/chart-vendor.js");
   eleventyConfig.addWatchTarget("src/charts");
   // Also reset after an aborted build, which may not reach eleventy.after.
   eleventyConfig.on("eleventy.before", finishChartBuild);

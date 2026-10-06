@@ -40,6 +40,15 @@ describe("chart bundles", () => {
       for (const entry of ["alpha.js", "beta.js", "alpha.png", "beta.png"]) assert.ok(files.includes(path.join(chartOutput, entry)));
       assert.ok((await readFile(path.join(chartOutput, "alpha.png"))).subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
       assert.ok(files.every((file) => !file.endsWith(".ts")));
+      assert.equal(files.length, 4, "independent entries must not emit shared chunks");
+      const originalAlpha = await readFile(path.join(chartOutput, "alpha.js"), "utf8");
+      await writeFile(path.join(pages, "beta", "chart.ts"), definition.replace("'Main'", "'Edited beta'"));
+      await mkdir(path.join(pages, "gamma"));
+      await writeFile(path.join(pages, "gamma", "chart.ts"), definition);
+      await writeFile(path.join(pages, "gamma", "data.json"), "[3]");
+      await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
+      assert.equal(await readFile(path.join(chartOutput, "alpha.js"), "utf8"), originalAlpha,
+        "editing or adding another page must not change an existing page's bundle");
       await assert.rejects(readdir(path.join(root, "_site")));
     } finally { await rm(root, { recursive: true, force: true }); }
   });

@@ -36,6 +36,9 @@
     </div>
     <span class="chart-copy-status" data-copy-status role="status" aria-live="polite"></span>
   </main>
+  {% for vendor in chartVendors %}
+  <script src="{{ vendor.url }}" defer></script>
+  {% endfor %}
   <script type="module" src="/assets/charts/{{ page.fileSlug }}.js"></script>
 </body>
 </html>

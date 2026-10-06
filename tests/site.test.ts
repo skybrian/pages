@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import pageData from "../src/pages/pages.11tydata.js";
 import sharp from "sharp";
 import { JSDOM } from "jsdom";
+import { chartVendors } from "../scripts/chart-vendor.js";
 
 describe("year-based page URLs", () => {
   it("preserves years and nested directories for standalone and index pages", () => {
@@ -55,10 +56,16 @@ describe("year-based page URLs", () => {
       assert.ok(imagePost.includes(`src="${image}"`));
       assert.ok(imagePost.includes('href="/assets/style.css"'));
 
-      assert.deepEqual(
-        await readFile(path.join(output, "assets/vendor/d3.v7.9.0.min.js")),
-        await readFile("src/assets/vendor/d3.v7.9.0.min.js"),
-      );
+      for (const vendor of chartVendors) {
+        assert.deepEqual(
+          await readFile(path.join(output, vendor.url)),
+          await readFile(vendor.source),
+        );
+        assert.deepEqual(
+          await readFile(path.join(output, vendor.licenseUrl)),
+          await readFile(vendor.license),
+        );
+      }
       for (const slug of ["kernel-cve-fixes", "us-households-by-income-band", "anthropic-run-rates", "japanese-financial-assets-abroad"]) {
         const chartPage = path.join(output, "2026", slug);
         assert.deepEqual(
@@ -66,7 +73,10 @@ describe("year-based page URLs", () => {
           await readFile(path.join("src/pages/2026", slug, "data.json")),
         );
         const chartHtml = await readFile(path.join(chartPage, "index.html"), "utf8");
-        const dom = new JSDOM(chartHtml);
+        const dom = new JSDOM(chartHtml, {
+          url: `https://pages.example/2026/${slug}/`,
+          runScripts: "outside-only",
+        });
         try {
           const document = dom.window.document;
           assert.ok(document.body.classList.contains("chart-layout"));
@@ -119,6 +129,30 @@ describe("year-based page URLs", () => {
             "the copy button shares the footer row with the data link");
           assert.ok(actions?.nextElementSibling?.hasAttribute("data-copy-status"),
             "copy feedback sits below the footer without shifting its controls");
+          const scripts = [...document.querySelectorAll("script[src]")];
+          assert.deepEqual(scripts.map(script => script.getAttribute("src")), [
+            ...chartVendors.map(vendor => vendor.url), `/assets/charts/${slug}.js`,
+          ], "load D3 and Plot before the independent page entry");
+          assert.ok(scripts.slice(0, 2).every(script => script.hasAttribute("defer")));
+          assert.equal(scripts.at(-1)?.getAttribute("type"), "module");
+
+          // Execute the actual vendor distributions and browser bundle, not
+          // the npm rendering imports, to catch adapter/API mismatches.
+          const browserData = JSON.parse(await readFile(path.join(chartPage, "data.json"), "utf8"));
+          dom.window.fetch = async () => new Response(JSON.stringify(browserData));
+          for (const vendor of chartVendors) {
+            dom.window.eval(await readFile(path.join(output, vendor.url), "utf8"));
+          }
+          const bundle = await readFile(path.join(output, "assets/charts", `${slug}.js`), "utf8");
+          assert.ok(Buffer.byteLength(bundle) < 100_000, "large libraries must stay outside page bundles");
+          dom.window.eval(bundle);
+          for (let attempt = 0; attempt < 100 && document.querySelector("[data-chart-root]")?.getAttribute("aria-busy") === "true"; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+          assert.equal(document.querySelector("[data-chart-root]")?.getAttribute("aria-busy"), "false");
+          assert.equal(document.querySelectorAll("[data-chart-root] > svg").length, 1,
+            `${slug}: browser enhancement must replace the static layouts with a live chart`);
+          assert.ok(!document.querySelector("[data-copy-status]")?.textContent?.includes("unavailable"));
         } finally {
           dom.window.close();
         }

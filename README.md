@@ -14,6 +14,15 @@ The PNGs in `assets/charts/` are for social-sharing previews only. Keep the
 container-query thresholds in `src/assets/style.css` aligned with
 `src/charts/sizing.js`.
 
+Each chart's browser entry is bundled independently, including the small shared
+runtime but not Plot or D3. Chart pages load locally hosted, versioned UMD
+distributions (D3 first, then Plot); browser-only esbuild aliases connect normal
+package imports to those globals. Node rendering and TypeScript continue to use
+the npm packages. The build copies vendor files and licenses from the installed
+packages and derives their URLs from the installed versions, keeping browser
+code, rendering, and types in sync. Plot and D3 are pinned in `package.json`;
+upgrading a package and its lockfile updates its browser filename automatically.
+
 When running the preview server with `npm run dev`, open
 `/admin/files/` to browse the current worktree. Preview output goes to `_preview/`,
 separate from production builds in `_site/`, so running `npm run build` does not
