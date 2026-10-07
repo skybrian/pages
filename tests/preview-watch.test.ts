@@ -17,7 +17,9 @@ after(async () => {
 });
 
 describe("Eleventy preview file watching", () => {
-  it("rebuilds after repeated atomic Markdown saves and watches TS/data changes", async () => {
+  it("rebuilds after repeated atomic Markdown saves and watches TS/data changes", {
+    skip: process.env.RUN_PREVIEW_WATCH !== "1",
+  }, async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "preview-watch-"));
     temporaryRoots.push(root);
     const pageDirectory = path.join(root, "src/pages/sample");

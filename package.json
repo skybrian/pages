@@ -6,6 +6,7 @@
     "build": "eleventy",
     "dev": "eleventy --serve",
     "test": "node --import tsx --test preview/*.test.ts preview/*.test.tsx tests/*.test.ts",
+    "test:preview-watch": "RUN_PREVIEW_WATCH=1 node --import tsx --test tests/preview-watch.test.ts",
     "typecheck": "tsc --noEmit",
     "update:kernel-cves": "tsx src/pages/2026/kernel-cve-fixes/update-data.ts"
   },
