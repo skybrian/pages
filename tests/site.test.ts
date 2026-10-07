@@ -131,7 +131,7 @@ describe("year-based page URLs", () => {
             "copy feedback sits below the footer without shifting its controls");
           const scripts = [...document.querySelectorAll("script[src]")];
           assert.deepEqual(scripts.map(script => script.getAttribute("src")), [
-            ...chartVendors.map(vendor => vendor.url), `/assets/charts/${slug}.js`,
+            ...chartVendors.map(vendor => vendor.url), "./chart.js",
           ], "load D3 and Plot before the independent page entry");
           assert.ok(scripts.slice(0, 2).every(script => script.hasAttribute("defer")));
           assert.equal(scripts.at(-1)?.getAttribute("type"), "module");
@@ -143,7 +143,7 @@ describe("year-based page URLs", () => {
           for (const vendor of chartVendors) {
             dom.window.eval(await readFile(path.join(output, vendor.url), "utf8"));
           }
-          const bundle = await readFile(path.join(output, "assets/charts", `${slug}.js`), "utf8");
+          const bundle = await readFile(path.join(chartPage, "chart.js"), "utf8");
           assert.ok(Buffer.byteLength(bundle) < 100_000, "large libraries must stay outside page bundles");
           dom.window.eval(bundle);
           for (let attempt = 0; attempt < 100 && document.querySelector("[data-chart-root]")?.getAttribute("aria-busy") === "true"; attempt++) {
@@ -156,10 +156,11 @@ describe("year-based page URLs", () => {
         } finally {
           dom.window.close();
         }
-        assert.ok(chartHtml.includes(`src="/assets/charts/${slug}.js"`));
+        assert.ok(chartHtml.includes('src="./chart.js"'));
         assert.match(chartHtml, /href="\.\/data\.json"[^>]*target="_blank"[^>]*rel="noopener"/);
         assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
-        assert.ok((await stat(path.join(output, "assets/charts", `${slug}.js`))).size > 0);
+        assert.ok((await stat(path.join(chartPage, "chart.js"))).size > 0);
+        await assert.rejects(stat(path.join(output, "assets/charts", `${slug}.js`)), { code: "ENOENT" });
         assert.ok(chartHtml.includes(`property="og:image" content="https://pages.skybrian.com/assets/charts/${slug}.png"`));
         const preview = await readFile(path.join(output, "assets/charts", `${slug}.png`));
         const metadata = await sharp(preview).metadata();

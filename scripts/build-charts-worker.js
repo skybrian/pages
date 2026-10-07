@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { register } from "tsx/esm/api";
@@ -116,6 +116,9 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
       dom.window.close();
     }
     await writeFile(join(outputDirectory, `${name}.png`), png);
+    // Match the year/nested-directory permalink used by pages.11tydata.js.
+    const pageOutputDirectory = resolve(siteOutputDirectory, relative(resolve(pagesDirectory), dirname(resolve(chartPath))));
+    await mkdir(pageOutputDirectory, { recursive: true });
 
     // Each page is a separate build: no site-wide chunks or dependency graph.
     // Types and Node rendering still use the original npm imports.
@@ -126,7 +129,7 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
         sourcefile: `${name}-entry.ts`,
         loader: "ts",
       },
-      outfile: join(outputDirectory, `${name}.js`),
+      outfile: join(pageOutputDirectory, "chart.js"),
       bundle: true,
       format: "esm",
       platform: "browser",

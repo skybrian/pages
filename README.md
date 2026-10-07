@@ -14,8 +14,9 @@ The PNGs in `assets/charts/` are for social-sharing previews only. Keep the
 container-query thresholds in `src/assets/style.css` aligned with
 `src/charts/sizing.js`.
 
-Each chart's browser entry is bundled independently, including the small shared
-runtime but not Plot or D3. Chart pages load locally hosted, versioned UMD
+Each chart's browser entry is bundled independently as `chart.js` beside its
+generated HTML and `data.json`, including the small shared runtime but not Plot
+or D3. Chart pages load locally hosted, versioned UMD
 distributions (D3 first, then Plot); browser-only esbuild aliases connect normal
 package imports to those globals. Node rendering and TypeScript continue to use
 the npm packages. The build copies vendor files and licenses from the installed

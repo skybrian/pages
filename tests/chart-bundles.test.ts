@@ -37,19 +37,44 @@ describe("chart bundles", () => {
       await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
       const chartOutput = path.join(output, "assets", "charts");
       const files = await walk(chartOutput);
-      for (const entry of ["alpha.js", "beta.js", "alpha.png", "beta.png"]) assert.ok(files.includes(path.join(chartOutput, entry)));
+      for (const entry of ["alpha.png", "beta.png"]) assert.ok(files.includes(path.join(chartOutput, entry)));
+      for (const page of ["alpha", "beta"]) {
+        assert.deepEqual(await readdir(path.join(output, page)), ["chart.js"]);
+      }
       assert.ok((await readFile(path.join(chartOutput, "alpha.png"))).subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
       assert.ok(files.every((file) => !file.endsWith(".ts")));
-      assert.equal(files.length, 4, "independent entries must not emit shared chunks");
-      const originalAlpha = await readFile(path.join(chartOutput, "alpha.js"), "utf8");
+      assert.equal(files.length, 2, "only social-preview images belong in shared chart assets");
+      const originalAlpha = await readFile(path.join(output, "alpha", "chart.js"), "utf8");
       await writeFile(path.join(pages, "beta", "chart.ts"), definition.replace("'Main'", "'Edited beta'"));
       await mkdir(path.join(pages, "gamma"));
       await writeFile(path.join(pages, "gamma", "chart.ts"), definition);
       await writeFile(path.join(pages, "gamma", "data.json"), "[3]");
       await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
-      assert.equal(await readFile(path.join(chartOutput, "alpha.js"), "utf8"), originalAlpha,
+      assert.equal(await readFile(path.join(output, "alpha", "chart.js"), "utf8"), originalAlpha,
         "editing or adding another page must not change an existing page's bundle");
       await assert.rejects(readdir(path.join(root, "_site")));
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
+  it("keeps year and nested directories when placing page-local bundles", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
+    const pages = path.join(root, "pages");
+    const output = path.join(root, "out");
+    try {
+      const directory = path.join(pages, "2027", "nested", "example");
+      await mkdir(directory, { recursive: true });
+      await writeFile(path.join(directory, "chart.ts"), definition);
+      await writeFile(path.join(directory, "data.json"), "[]");
+      // Existing page assets must survive a chart rebuild.
+      const pageOutput = path.join(output, "2027", "nested", "example");
+      await mkdir(pageOutput, { recursive: true });
+      await writeFile(path.join(pageOutput, "index.html"), "<h1>Example</h1>");
+      await writeFile(path.join(pageOutput, "data.json"), "[]");
+      await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
+      assert.deepEqual((await readdir(pageOutput)).sort(), ["chart.js", "data.json", "index.html"]);
+      assert.equal(await readFile(path.join(pageOutput, "index.html"), "utf8"), "<h1>Example</h1>");
+      assert.equal(await readFile(path.join(pageOutput, "data.json"), "utf8"), "[]");
+      await assert.rejects(readFile(path.join(output, "assets/charts/example.js")));
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 
