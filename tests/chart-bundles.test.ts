@@ -35,15 +35,14 @@ describe("chart bundles", () => {
       }
       await writeFile(path.join(pages, "update-data.ts"), "console.log('not a chart');\n");
       await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
-      const chartOutput = path.join(output, "assets", "charts");
-      const files = await walk(chartOutput);
-      for (const entry of ["alpha.png", "beta.png"]) assert.ok(files.includes(path.join(chartOutput, entry)));
+      const files = [...await walk(path.join(output, "alpha")), ...await walk(path.join(output, "beta"))];
       for (const page of ["alpha", "beta"]) {
-        assert.deepEqual(await readdir(path.join(output, page)), ["chart.js"]);
+        assert.deepEqual((await readdir(path.join(output, page))).sort(), ["chart.js", "chart.png"]);
       }
-      assert.ok((await readFile(path.join(chartOutput, "alpha.png"))).subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+      assert.ok((await readFile(path.join(output, "alpha", "chart.png"))).subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
       assert.ok(files.every((file) => !file.endsWith(".ts")));
-      assert.equal(files.length, 2, "only social-preview images belong in shared chart assets");
+      assert.equal(files.length, 4, "each page owns its bundle and social-preview image");
+      await assert.rejects(readdir(path.join(output, "assets", "charts")), { code: "ENOENT" });
       const originalAlpha = await readFile(path.join(output, "alpha", "chart.js"), "utf8");
       await writeFile(path.join(pages, "beta", "chart.ts"), definition.replace("'Main'", "'Edited beta'"));
       await mkdir(path.join(pages, "gamma"));
@@ -71,16 +70,17 @@ describe("chart bundles", () => {
       await writeFile(path.join(pageOutput, "index.html"), "<h1>Example</h1>");
       await writeFile(path.join(pageOutput, "data.json"), "[]");
       await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
-      assert.deepEqual((await readdir(pageOutput)).sort(), ["chart.js", "data.json", "index.html"]);
+      assert.deepEqual((await readdir(pageOutput)).sort(), ["chart.js", "chart.png", "data.json", "index.html"]);
       assert.equal(await readFile(path.join(pageOutput, "index.html"), "utf8"), "<h1>Example</h1>");
       assert.equal(await readFile(path.join(pageOutput, "data.json"), "utf8"), "[]");
       await assert.rejects(readFile(path.join(output, "assets/charts/example.js")));
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 
-  it("rejects duplicate page-directory entry names", async () => {
+  it("supports the same chart directory name under different parents and removes legacy shared assets", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
     const pages = path.join(root, "pages");
+    const output = path.join(root, "out");
     try {
       for (const parent of ["first", "second"]) {
         const page = path.join(pages, parent, "same-name");
@@ -88,7 +88,13 @@ describe("chart bundles", () => {
         await writeFile(path.join(page, "chart.ts"), definition);
         await writeFile(path.join(page, "data.json"), "[]");
       }
-      await assert.rejects(buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: path.join(root, "out") }), /must be unique/);
+      await mkdir(path.join(output, "assets", "charts"), { recursive: true });
+      await writeFile(path.join(output, "assets", "charts", "same-name.png"), "obsolete");
+      await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
+      for (const parent of ["first", "second"]) {
+        assert.deepEqual((await readdir(path.join(output, parent, "same-name"))).sort(), ["chart.js", "chart.png"]);
+      }
+      await assert.rejects(readdir(path.join(output, "assets", "charts")), { code: "ENOENT" });
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 
@@ -101,7 +107,8 @@ describe("chart bundles", () => {
       await writeFile(path.join(pages, "chart.ts"), definition);
       await writeFile(path.join(pages, "data.json"), "{}");
       await assert.rejects(buildChartBundles({ pagesDirectory: path.join(root, "pages"), siteOutputDirectory: output }));
-      assert.deepEqual(await readdir(path.join(output, "assets", "charts")), []);
+      await assert.rejects(readdir(path.join(output, "broken")), { code: "ENOENT" });
+      await assert.rejects(readdir(path.join(output, "assets", "charts")), { code: "ENOENT" });
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 

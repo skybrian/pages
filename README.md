@@ -10,7 +10,7 @@ emitting files. To run the build, use `npm run build`.
 Chart pages include build-time inline SVGs, with compact, medium, and wide
 layouts selected by CSS container queries. JavaScript uses the same sizing tiers
 to add interactivity without changing the chart's fonts or geometry on load.
-The PNGs in `assets/charts/` are for social-sharing previews only. Keep the
+Each page's `chart.png` is for social-sharing previews only. Keep the
 container-query thresholds in `src/assets/style.css` aligned with
 `src/charts/sizing.js`.
 
@@ -145,8 +145,8 @@ Markdown content, a JSON link opening in a new tab, and social-image metadata.
 The description is used for metadata and homepage summaries, not displayed as
 a subtitle. Use the Markdown body for context, sources, methodology, and caveats
 without repeating the heading or chart labels.
-URLs remain based on the year and directory name. Chart directory names must be
-unique across years because generated assets use the directory name.
+URLs remain based on the year and directory name. Chart directory names may be
+reused across years or parent directories; generated assets stay with each page.
 
 `chart.ts` default-exports a definition; it does not fetch data or mount itself:
 
@@ -189,7 +189,7 @@ The JSON schema is page-specific; multiple chart views share the same dataset.
 During builds, Eleventy bundles generated browser entry points with esbuild and
 publishes adjacent `data.json` files. The build also calls the designated chart's
 renderer using JSDOM in `preview` mode and rasterizes it with Sharp into a
-1200×630 PNG at `/assets/charts/<page-directory-name>.png`. The initial HTML points
+1200×630 `chart.png` beside the page's HTML, `chart.js`, and `data.json`. The initial HTML points
 Open Graph metadata at this image's absolute production URL. Each page has one
 social image, regardless of the selected tab; fragments do not select a different
 social card. Invalid data or a broken preview fails the build. Builds use checked-in

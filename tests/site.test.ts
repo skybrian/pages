@@ -161,8 +161,8 @@ describe("year-based page URLs", () => {
         assert.doesNotMatch(chartHtml, /\bdownload(?:\s|>)/);
         assert.ok((await stat(path.join(chartPage, "chart.js"))).size > 0);
         await assert.rejects(stat(path.join(output, "assets/charts", `${slug}.js`)), { code: "ENOENT" });
-        assert.ok(chartHtml.includes(`property="og:image" content="https://pages.skybrian.com/assets/charts/${slug}.png"`));
-        const preview = await readFile(path.join(output, "assets/charts", `${slug}.png`));
+        assert.ok(chartHtml.includes(`property="og:image" content="https://pages.skybrian.com/2026/${slug}/chart.png"`));
+        const preview = await readFile(path.join(chartPage, "chart.png"));
         const metadata = await sharp(preview).metadata();
         assert.equal(metadata.format, "png");
         assert.equal(metadata.width, 1200);
@@ -174,6 +174,7 @@ describe("year-based page URLs", () => {
           await assert.rejects(stat(path.join(chartPage, script)), { code: "ENOENT" });
         }
       }
+      await assert.rejects(stat(path.join(output, "assets/charts")), { code: "ENOENT" });
       const redirects = await readFile(path.join(output, "_redirects"), "utf8");
       assert.equal(redirects, await readFile("src/_redirects", "utf8"));
       for (const slug of ["anthropic-run-rates", "flux3-image-test"]) {

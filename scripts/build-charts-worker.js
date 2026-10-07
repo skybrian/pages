@@ -87,18 +87,15 @@ async function findChartEntries(directory) {
 export async function buildChartBundles({ pagesDirectory = resolve("src/pages"), siteOutputDirectory = "_site", outputMode = "fs" } = {}) {
   if (outputMode !== "fs") return;
   const entries = await findChartEntries(pagesDirectory);
-  const outputDirectory = resolve(siteOutputDirectory, "assets/charts");
-  await rm(outputDirectory, { recursive: true, force: true });
+  // Remove shared chart assets left by builds before page-local output.
+  await rm(resolve(siteOutputDirectory, "assets/charts"), { recursive: true, force: true });
   if (!entries.length) return;
-  await mkdir(outputDirectory, { recursive: true });
   const vendorDirectory = resolve(siteOutputDirectory, "assets/vendor");
   await mkdir(vendorDirectory, { recursive: true });
   for (const vendor of chartVendors) {
     await copyFile(vendor.source, join(vendorDirectory, basename(vendor.url)));
     await copyFile(vendor.license, join(vendorDirectory, basename(vendor.licenseUrl)));
   }
-  const names = entries.map(([name]) => name);
-  if (new Set(names).size !== names.length) throw new Error(`Chart page directory names must be unique: ${names.join(", ")}`);
 
   for (const [name, chartPath] of entries) {
     const { definition, data } = await loadChart(chartPath);
@@ -115,10 +112,11 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
     } finally {
       dom.window.close();
     }
-    await writeFile(join(outputDirectory, `${name}.png`), png);
+
     // Match the year/nested-directory permalink used by pages.11tydata.js.
     const pageOutputDirectory = resolve(siteOutputDirectory, relative(resolve(pagesDirectory), dirname(resolve(chartPath))));
     await mkdir(pageOutputDirectory, { recursive: true });
+    await writeFile(join(pageOutputDirectory, "chart.png"), png);
 
     // Each page is a separate build: no site-wide chunks or dependency graph.
     // Types and Node rendering still use the original npm imports.
