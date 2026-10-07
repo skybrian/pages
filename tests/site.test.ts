@@ -43,7 +43,7 @@ describe("year-based page URLs", () => {
 
       const kernelEntry = homepage.match(/<li>\s*<a href="\/2026\/kernel-cve-fixes\/">[\s\S]*?<\/li>/)?.[0];
       assert.ok(kernelEntry);
-      assert.ok(kernelEntry.includes("A chart of CSVs fixed by Linux kernel releases"));
+      assert.ok(kernelEntry.includes("A chart of CVEs fixed by Linux kernel releases"));
 
       const image = "flux3image-a-woman-playing-accordion.png";
       assert.deepEqual(
