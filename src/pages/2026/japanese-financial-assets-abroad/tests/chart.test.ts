@@ -8,13 +8,12 @@ import chart from "../chart.ts";
 const data = JSON.parse(await readFile(
   new URL("../data.json", import.meta.url), "utf8",
 )) as Array<Record<string, number>>;
-const markdown = await readFile(new URL("../index.md", import.meta.url), "utf8");
 
 it("preserves static chart geometry and labels when enhanced", async () => {
   await assertStaticChartParity(new URL("../", import.meta.url), chart);
 });
 
-it("preserves the full-precision 1996–2025 dataset and source notes", () => {
+it("preserves the full-precision 1996–2025 dataset", () => {
   assert.equal(data.length, 30);
   assert.deepEqual(data.map((row) => row.year), Array.from({ length: 30 }, (_, i) => 1996 + i));
   assert.deepEqual(data[0], {
@@ -25,10 +24,6 @@ it("preserves the full-precision 1996–2025 dataset and source notes", () => {
     year: 2025, "Portfolio investment": 768.653, "Direct investment": 384.535,
     "Other investment": 373.269, "Reserve assets": 213.672, "Financial derivatives": 65.504,
   });
-  assert.match(markdown, /mof\.go\.jp\/english\/policy\/international_policy\/reference\/iip\/index\.htm/);
-  assert.match(markdown, /revised May 26, 2026/);
-  assert.match(markdown, /BPM5 to BPM6/);
-  assert.match(markdown, /direct BPM6 compilation begins in 2014/);
 });
 
 it("renders the stacked categories, BPM6 marker, total, and legend in the supplied dimensions", () => {

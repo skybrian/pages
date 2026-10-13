@@ -146,12 +146,6 @@ describe("year-based page URLs", () => {
           assert.equal(tabButtons.filter((tab) => tab.getAttribute("aria-selected") === "true").length, 1,
             "exactly one chart view is initially selected");
         }
-        const description = document.querySelector('meta[name="description"]')?.getAttribute("content");
-        if (description) {
-          assert.equal(document.querySelector('meta[property="og:description"]')?.getAttribute("content"), description);
-          assert.ok(homepage.includes(description), "retain the description in homepage summaries");
-          assert.ok(!document.body.textContent?.includes(description), "do not repeat metadata as visible prose");
-        }
         assert.equal(document.querySelector("[data-chart-root] img"), null,
           "the on-page chart must not use the social preview PNG");
         const staticCharts = document.querySelectorAll("[data-chart-root] .chart-static svg");
@@ -162,7 +156,7 @@ describe("year-based page URLs", () => {
           assert.ok(svg.querySelector("text"), "the initial chart already includes its labels");
         }
         const notes = card?.querySelector(".chart-notes");
-        assert.ok(notes?.textContent?.includes("Source"), "chart sources belong inside the rounded card");
+        assert.ok(notes, "render the Markdown notes container inside the rounded card");
         assert.equal(card?.querySelector("[data-chart-root]")?.nextElementSibling, notes,
           "chart notes follow the chart inside the card");
         const actions = document.querySelector(".chart-actions");

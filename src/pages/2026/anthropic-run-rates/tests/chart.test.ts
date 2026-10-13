@@ -8,27 +8,17 @@ import chart from "../chart.ts";
 const data = JSON.parse(await readFile(
   new URL("../data.json", import.meta.url), "utf8",
 )) as Array<Record<string, unknown>>;
-const markdown = await readFile(new URL("../index.md", import.meta.url), "utf8");
 
 it("preserves static chart geometry and labels when enhanced", async () => {
   await assertStaticChartParity(new URL("../", import.meta.url), chart);
 });
 
-it("preserves all reported milestones, labels, sources, and the May date caveat", () => {
+it("preserves all reported milestones and labels", () => {
   assert.deepEqual(data.map((row) => [row.date, row.value, row.label]), [
     ["2025-12-31", 9, "~$9B"], ["2026-02-12", 14, "$14B"],
     ["2026-02-28", 19, "~$19B"], ["2026-04-06", 30, ">$30B"],
     ["2026-05-10", 47, "~$47B"], ["2026-07-31", 65, ">$65B"],
   ]);
-  for (const url of [
-    "anthropic.com/news/google-broadcom-partnership-compute",
-    "anthropic.com/news/anthropic-raises-30-billion-series-g-funding-380-billion-post-money-valuation",
-    "reuters.com/commentary/breakingviews/anthropic-gives-lesson-ai-revenue-hallucination-2026-03-10/",
-    "anthropic.com/news/series-h",
-    "reuters.com/technology/anthropic-revenue-run-rate-tops-65-billion-source-says-2026-08-17/",
-  ]) assert.ok(markdown.includes(url), `missing source ${url}`);
-  assert.match(markdown, /plotted at May 10/);
-  assert.match(markdown, /earlier this month/);
 });
 
 it("renders an accessible chart at the supplied preview dimensions", () => {

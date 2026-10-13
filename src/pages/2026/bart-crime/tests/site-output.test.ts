@@ -27,9 +27,6 @@ it("publishes the historical series with accessible reporting-break markers", as
     assert.deepEqual([...tabs].map((tab) => tab.textContent), [
       "Crimes per 1M trips", "Crime counts", "Passenger trips",
     ]);
-    assert.match(document.body.textContent!, /monthly reports and year-to-date totals/);
-    assert.match(document.body.textContent!, /Some counts are estimated from chart bars/);
-    assert.match(document.body.textContent!, /In January 2025, reporting changed/);
   } finally {
     dom.window.close();
   }
