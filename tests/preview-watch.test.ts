@@ -37,6 +37,10 @@ describe("Eleventy preview file watching", () => {
     await writeFile(path.join(root, "src/_includes/test.njk"),
       '{% include "preview-ribbon.njk" %}{{ content | safe }}{{ page.inputPath | initialCharts | safe }}');
     await writeFile(path.join(root, "package.json"), '{"type":"module"}\n');
+    await writeFile(path.join(root, "src/pages/AGENTS.md"),
+      "---\npermalink: /AGENTS/index.html\n---\n\nPage authoring guidance\n");
+    await writeFile(path.join(pageDirectory, "AGENTS.md"),
+      "---\npermalink: /sample/AGENTS/index.html\n---\n\nLocal authoring guidance\n");
     await writeFile(
       path.join(pageDirectory, "index.md"),
       "---\nlayout: test.njk\npermalink: /sample/index.html\n---\n\nInitial content\n",
@@ -91,6 +95,11 @@ describe("Eleventy preview file watching", () => {
       assert.match(await readFile(htmlPath, "utf8"), /Initial content/);
       assert.match(await readFile(htmlPath, "utf8"), /Chart 1\/1/);
       assert.match(await readFile(htmlPath, "utf8"), /class="preview-ribbon"/);
+      for (const route of ["/AGENTS/", "/sample/AGENTS/"]) {
+        assert.equal((await fetch(`http://localhost:${port}${route}`)).status, 404,
+          `${route}: agent guidance must not be served as a preview page`);
+        await assert.rejects(readFile(path.join(output, route, "index.html")), { code: "ENOENT" });
+      }
 
       await promisify(execFile)(process.execPath, [
         path.join(projectRoot, "node_modules/@11ty/eleventy/cmd.cjs"),

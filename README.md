@@ -38,6 +38,12 @@ Other binary files and files exceeding their limits are not previewed or served.
 Supported source extensions are syntax highlighted with MicroLighter;
 unrecognized text extensions remain plain text.
 
+Eleventy does not remove previously generated files when their sources are
+deleted or excluded. If an obsolete page remains available in preview, stop
+the preview server, remove that page's generated output from `_preview/`, and
+restart the server. Agent guidance files under `src/pages/` are excluded from
+page generation.
+
 Existing `.md` and `.markdown` files have an **Edit** button. The preview-only
 CodeMirror 6 editor is bundled locally with esbuild and provides Markdown
 highlighting, line wrapping, undo/redo, and search. Saving is always explicit
