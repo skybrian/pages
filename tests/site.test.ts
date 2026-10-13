@@ -18,7 +18,7 @@ async function findSources(root: string, include: (name: string) => boolean): Pr
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       if (entry.isDirectory()) {
         if (entry.name !== "tests") await walk(path.join(directory, entry.name));
-      } else if (entry.isFile() && include(entry.name)) {
+      } else if (entry.isFile() && entry.name !== "AGENTS.md" && include(entry.name)) {
         sources.push(path.relative(root, path.join(directory, entry.name)));
       }
     }
@@ -45,6 +45,7 @@ describe("year-based page URLs", () => {
       for (const source of [
         "2026/standalone.html", "2026/template.njk", "2027/index.md",
         "2027/nested/post/index.md", "2026/post/tests/fixtures/leak.md", "2026/helper.ts",
+        "AGENTS.md", "2026/post/AGENTS.md",
       ]) {
         const file = path.join(root, source);
         await mkdir(path.dirname(file), { recursive: true });

@@ -94,102 +94,16 @@ it for a commit with `git commit --no-verify`.
 
 ## Page URLs and archives
 
-Put pages under their year in `src/pages/`, for example:
-
-- `src/pages/2026/anthropic-run-rates.html` → `/2026/anthropic-run-rates/`
-- `src/pages/2026/my-image-post/index.md` → `/2026/my-image-post/`
-
-The URL follows the source directory, not the post date. Start a new year by
-creating `src/pages/2027/`; no configuration change is needed. The homepage
-lists pages from all years. Year archive indexes are not generated automatically.
+Page-authoring recipes and URL conventions are in
+[`src/pages/AGENTS.md`](src/pages/AGENTS.md). That guide covers image-post front
+matter, chart definitions, editorial conventions, and page testing.
 
 Permanent redirects for the original, yearless URLs are maintained in
 `src/_redirects`, which is copied into the build output for Netlify. These
 also preserve direct image links. Netlify handles these redirects in production;
 the local Eleventy preview does not apply them.
 
-## Image posts
-
-Give each post a directory in `src/pages/2026/`, with its image next to `index.md`:
-
-```text
-src/pages/2026/my-image-post/
-├── index.md
-└── example.png
-```
-
-Use the `image-post.njk` layout in `index.md` and a relative image path:
-
-```markdown
----
-title: An image post
-date: 2026-10-02
-layout: image-post.njk
-image: example.png
-imageAlt: "A description of the image."
-imageWidth: 880
-imageHeight: 1184
----
-Your note goes here. Markdown formatting is supported.
-```
-
-Use the image's actual dimensions (or omit both dimension fields).
-The post appears on the home page automatically. Clicking the image opens
-the original file. The year and directory name determine the page URL (for example,
-`/2026/my-image-post/`). Referenced post images are copied alongside the generated
-page, while `src/assets/` is reserved for shared site assets such as CSS.
-
-## Chart pages
-
-Each chart page lives in a directory under `src/pages/<year>/`:
-
-```text
-my-chart/
-├── index.md       # Page metadata and explanatory Markdown
-├── data.json      # Published data (and, optionally, provenance)
-└── chart.ts       # Chart definitions, validation, and SVG rendering
-```
-
-Use `layout: chart-page.njk` in the Markdown front matter, along with `title`,
-`date`, and optionally `description`. The shared layout provides the chart panel,
-Markdown content, a JSON link opening in a new tab, and social-image metadata.
-The description is used for metadata and homepage summaries, not displayed as
-a subtitle. Use the Markdown body for context, sources, methodology, and caveats
-without repeating the heading or chart labels.
-URLs remain based on the year and directory name. Chart directory names may be
-reused across years or parent directories; generated assets stay with each page.
-
-`chart.ts` default-exports a definition; it does not fetch data or mount itself:
-
-```ts
-import { defineChartPage } from "../../../charts/definition.ts";
-
-export default defineChartPage<Dataset>({
-  parseData(value: unknown): Dataset {
-    // Validate the page-specific JSON shape, throwing on invalid input.
-    return validateDataset(value);
-  },
-  charts: [
-    {
-      id: "counts",
-      label: "Counts",
-      alt: "A description of what this chart shows.",
-      render(data, { document, width, height, mode }) {
-        return renderCounts(data, {
-          document, width, height, interactive: mode === "interactive",
-        });
-      },
-    },
-  ],
-  previewChart: "counts", // Optional; defaults to the first chart.
-});
-```
-
-Renderers must return an `SVGSVGElement` and use the supplied `document`, not a
-browser-global document. They may use Observable Plot or construct SVG directly.
-Keep browser side effects and Node-only imports out of the chart definition.
-Additional renderer modules and private data-update scripts may live alongside it;
-only the chart entry and its imports are bundled for the browser.
+## Chart build and runtime
 
 The shared runtime fetches and validates JSON once, handles loading/errors and
 responsive redraws, and shows keyboard-accessible tabs only when there is more

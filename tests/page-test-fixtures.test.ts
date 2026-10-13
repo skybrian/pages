@@ -35,6 +35,8 @@ it("excludes page-local test fixtures from real production output without droppi
       mkdir(path.join(root, "src/assets"), { recursive: true }),
     ]);
     await writeFile(path.join(root, "src/_redirects"), "");
+    await writeFile(path.join(root, "src/pages/AGENTS.md"), "# Page authoring guidance\n");
+    await writeFile(path.join(ordinaryPage, "AGENTS.md"), "# Local authoring guidance\n");
     await writeFile(path.join(ordinaryPage, "index.md"), [
       "---", "permalink: /example/index.html", "---",
       "", "![page image](photo.png)", "", "[page data](data.json)", "",
@@ -101,6 +103,9 @@ it("excludes page-local test fixtures from real production output without droppi
       readFile(path.join(output, "leaked/index.html")),
       { code: "ENOENT" },
     );
+    for (const guidancePage of ["pages/AGENTS/index.html", "pages/2026/example/AGENTS/index.html"]) {
+      await assert.rejects(readFile(path.join(output, guidancePage)), { code: "ENOENT" });
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -28,6 +28,8 @@ export default async function (eleventyConfig) {
   // Page-local tests are source code, never templates or published passthrough
   // assets (including image and JSON fixtures).
   eleventyConfig.ignores.add("src/pages/**/tests/**");
+  // Authoring guidance is Markdown, but must never become a published page.
+  eleventyConfig.ignores.add("src/pages/**/AGENTS.md");
   eleventyConfig.addGlobalData("previewRibbonStyles", PREVIEW_RIBBON_STYLES);
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
   eleventyConfig.addFilter("initialCharts", renderInitialCharts);
