@@ -7,9 +7,10 @@ export interface Quarter {
   start: string;
   trips: number;
   crimes: Record<typeof categories[number], number>;
-  countMethod: "table" | "embedded-chart-data" | "digitized-bars" | "printed-counts";
+  countMethod: "table" | "embedded-chart-data" | "digitized-bars" | "printed-counts" | "monthly-reconstruction";
   crimeSource: string;
   crimeSection: string;
+  crimeSources?: Array<{ url: string; section: string }>;
   months: Array<{ month: string; trips: number; url: string; file: string; sheet: string }>;
 }
 export interface Dataset { metadata: Record<string, unknown>; quarters: Quarter[] }
@@ -30,12 +31,17 @@ function parseData(value: unknown): Dataset {
       !/^\d{4}-\d{2}-01$/.test(row.start) || !Number.isFinite(Date.parse(row.start)) || row.start <= previous ||
       !Number.isSafeInteger(row.trips) || row.trips <= 0 || !row.crimes ||
       categories.some((key) => !Number.isSafeInteger(row.crimes[key]) || row.crimes[key] < 0) ||
-      !["table", "embedded-chart-data", "digitized-bars", "printed-counts"].includes(row.countMethod) ||
+      !["table", "embedded-chart-data", "digitized-bars", "printed-counts", "monthly-reconstruction"].includes(row.countMethod) ||
       typeof row.crimeSource !== "string" || !row.crimeSource.startsWith("https://www.bart.gov/") ||
       typeof row.crimeSection !== "string" || !Array.isArray(row.months) || row.months.length !== 3) {
       throw new TypeError("Invalid quarter or provenance.");
     }
     const start = new Date(`${row.start}T00:00:00Z`);
+    if (row.crimeSources !== undefined && (!Array.isArray(row.crimeSources) || !row.crimeSources.length ||
+      row.crimeSources.some((source) => !source || typeof source.url !== "string" ||
+        !source.url.startsWith("https://www.bart.gov/") || typeof source.section !== "string" || !source.section))) {
+      throw new TypeError("Invalid additional crime provenance.");
+    }
     for (const [index, month] of row.months.entries()) {
       const expected = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + index, 1));
       if (month.month !== expected.toISOString().slice(0, 7) || !Number.isSafeInteger(month.trips) ||
@@ -63,34 +69,50 @@ const views = [
   { id: "trips", label: "Passenger trips", axis: "Passenger trips (millions)", color: "#2457a7" },
 ] as const;
 
+const crimeSeriesBreaks = [
+  { start: "2019-07-01", label: "Jul 2019: source change" },
+  { start: "2025-01-01", label: "Jan 2025: UCR → NIBRS" },
+] as const;
+const crimeCaveat = " Crime totals combine robbery, aggravated assault, rape, homicide, and electronic theft. Dashed vertical lines and gaps mark the July 2019 source change and January 2025 reporting change. Earlier counts use monthly YTD snapshots subject to revisions; some later counts are digitized estimates.";
+
 export default defineChartPage<Dataset>({
   parseData,
   charts: views.map((view) => ({
     id: view.id,
     label: view.label,
-    alt: `Quarterly BART ${view.label.toLowerCase()}, July 2020 through June 2026. Crime totals combine robbery, aggravated assault, rape, homicide, and electronic theft. The January 2025 reporting change is marked on crime charts.`,
+    alt: `Quarterly BART ${view.label.toLowerCase()}, July 2018 through June 2026.${view.id === "trips" ? " Total trips, not unique riders." : crimeCaveat}`,
     render(data, { document, width, height, mode }) {
       const points = data.quarters.map((row) => {
         const crimes = totalCrimes(row);
         const value = view.id === "rate" ? crimes / row.trips * 1e6 : view.id === "crimes" ? crimes : row.trips / 1e6;
         return { ...row, value, date: new Date(`${row.start}T00:00:00Z`),
-          regime: row.start < "2025-01-01" ? "UCR" : "NIBRS",
-          title: `${row.quarter} (${row.start.slice(0, 7)})\n${view.id !== "trips" && row.countMethod === "digitized-bars" ? "≈ " : ""}${value.toLocaleString("en-US", { maximumFractionDigits: view.id === "crimes" ? 0 : 2 })} ${view.axis.toLowerCase()}\n${crimes} crimes · ${row.trips.toLocaleString("en-US")} trips\nCounts: ${row.countMethod}` };
+          regime: crimeSeriesBreaks.filter((boundary) => row.start >= boundary.start).length,
+          title: `${row.quarter} (${row.start.slice(0, 7)})\n${view.id !== "trips" && row.countMethod === "digitized-bars" ? "≈ " : ""}${value.toLocaleString("en-US", { maximumFractionDigits: view.id === "crimes" ? 0 : 2 })} ${view.axis.toLowerCase()}\n${crimes} crimes · ${row.trips.toLocaleString("en-US")} trips\nCounts: ${row.countMethod}${row.countMethod === "monthly-reconstruction" ? " (YTD snapshots; subject to revisions)" : ""}` };
       });
       const compact = width < 560;
       const crimeView = view.id !== "trips";
+      const firstDate = points[0]!.date;
+      const lastDate = points.at(-1)!.date;
+      const middleDate = points[Math.floor(points.length / 2)]!.date;
+      const monthYear = (date: Date) => date.toLocaleDateString("en-US", {
+        month: "long", year: "numeric", timeZone: "UTC",
+      });
+      const lastMonth = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth() + 2, 1));
+      const dateRange = `${monthYear(firstDate)}–${monthYear(lastMonth)}`;
       const svg = Plot.plot({
         document, width, height: mode === "preview" ? height : Math.max(height, 400),
-        marginTop: 58, marginRight: 22, marginBottom: 55, marginLeft: compact ? 42 : 62,
+        marginTop: 58, marginRight: 22, marginBottom: crimeView ? 73 : 55, marginLeft: compact ? 42 : 62,
         style: { fontSize: mode === "preview" ? "16px" : "12px" },
-        x: { type: "utc", domain: [points[0]!.date, points.at(-1)!.date],
-          ticks: compact ? [new Date("2020-07-01"), new Date("2023-01-01"), new Date("2026-04-01")] : 7,
+        x: { type: "utc", domain: [firstDate, lastDate],
+          ticks: compact ? [firstDate, middleDate, lastDate] : 7,
           tickFormat: (date) => new Date(date).toLocaleDateString("en-US", { year: "numeric", timeZone: "UTC" }), label: null },
         y: { zero: true, nice: true, grid: true, ticks: compact ? 5 : 6, label: null },
         marks: [
           Plot.ruleY([0], { stroke: "#9ca3af" }),
-          ...(crimeView ? [Plot.ruleX([new Date("2025-01-01")], { stroke: "#64748b", strokeDasharray: "4,4" })] : []),
-          // Do not connect across the change in offense reporting.
+          ...(crimeView ? crimeSeriesBreaks.map((boundary) => Plot.ruleX([new Date(boundary.start)], {
+            stroke: "#64748b", strokeDasharray: "4,4",
+          })) : []),
+          // Do not connect across source-vintage or offense-reporting changes.
           Plot.lineY(points, { x: "date", y: "value", z: crimeView ? "regime" : undefined, stroke: view.color, strokeWidth: 2.5 }),
           Plot.dot(points, { x: "date", y: "value", fill: view.color, r: 3,
             title: "title", tip: mode === "interactive" }),
@@ -112,17 +134,20 @@ export default defineChartPage<Dataset>({
       subtitle.textContent = crimeView ? "Persons + electronic theft" : "Total trips, not unique riders";
       svg.append(subtitle);
       if (crimeView) {
-        const note = document.createElementNS(ns, "text");
-        note.setAttribute("x", String(width - 22));
-        note.setAttribute("y", String((mode === "preview" ? height : Math.max(height, 400)) - 7));
-        note.setAttribute("text-anchor", "end");
-        note.setAttribute("font-size", mode === "preview" ? "15" : "11");
-        note.setAttribute("fill", "#475569");
-        note.textContent = "Jan 2025: UCR → NIBRS";
-        svg.append(note);
+        for (const [index, boundary] of crimeSeriesBreaks.entries()) {
+          const note = document.createElementNS(ns, "text");
+          note.setAttribute("x", String(width - 22));
+          note.setAttribute("y", String((mode === "preview" ? height : Math.max(height, 400)) - 7 -
+            (crimeSeriesBreaks.length - 1 - index) * 18));
+          note.setAttribute("text-anchor", "end");
+          note.setAttribute("font-size", mode === "preview" ? "15" : "11");
+          note.setAttribute("fill", "#475569");
+          note.textContent = boundary.label;
+          svg.append(note);
+        }
       }
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", `BART ${view.label.toLowerCase()} by quarter, July 2020–June 2026.${crimeView ? " Includes electronic theft. A gap marks the January 2025 reporting change. Some counts are digitized estimates." : " Trips are independently sourced from monthly origin-destination totals."}`);
+      svg.setAttribute("aria-label", `BART ${view.label.toLowerCase()} by quarter, ${dateRange}.${crimeView ? crimeCaveat : " Trips are independently sourced from monthly origin-destination totals."}`);
       return svg;
     },
   })),

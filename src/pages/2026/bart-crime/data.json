@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "retrieved": "2026-10-12",
+    "retrieved": "2026-10-13",
     "definition": "Homicide + rape + robbery + aggravated assault + electronic theft. Electronic robbery is a subset of robbery, not an additional category.",
     "rateFormula": "sum(crimes) / trips * 1000000",
     "tripDefinition": "Sum of monthly origin-destination Total Trips grand totals. These are trips, not unique riders.",
@@ -11,10 +11,440 @@
       "Reconstructed series: not the unpublished table behind the news graphic. Original rates and retrospective graphics differ from category counts.",
       "Seven quarters use bar heights rounded to integer counts; retain digitized-bars flags as estimates.",
       "Uses report vintages identified on each row, including revisions of earlier quarters.",
-      "Some source PDFs contain raster graphics; the FY24 Q1 file is a PowerPoint archive despite its PDF extension."
-    ]
+      "Some source PDFs contain raster graphics; the FY24 Q1 file is a PowerPoint archive despite its PDF extension.",
+      "FY19 four-category counts use retrospective monthly YTD snapshots and subtraction; corrections to earlier months can affect reconstructed quarters. Theft counts use exact printed monthly snatching labels, excluding force/fear robberies. The police reports warn their database figures are unaudited and may differ from official UCR totals.",
+      "FY19 Q2 uses revised 2018 robbery totals; FY19 Q3 uses revised January\u2013March 2019 homicide and rape totals. Row-level arithmetic, contributing reports, and vintage caveats are retained.",
+      "The July 2019 source boundary is shown as a gap and dashed marker. It is distinct from the established January 2025 UCR/NIBRS methodology break."
+    ],
+    "sourceBreak": "2019-07-01",
+    "sourceBreakExplanation": "Monthly police/TriTech reconstruction through FY19; retrospective QPR category tables from FY20. Overlapping counts differ by source vintage. This is not an established offense-definition change.",
+    "publishedMetricDefinitionChange": {
+      "quarter": "FY21 Q2",
+      "presentationDate": "2021-03-11",
+      "explanation": "FY21 Q1 lists four crimes against persons; FY21 Q2 adds electronic theft. This reconstruction uses the same five categories before and after, so the published aggregate expansion is not a category break in this series.",
+      "source": "https://www.bart.gov/sites/default/files/docs/Quarterly%20Service%20Performance%20Review%20%E2%80%93%20Second%20Quarter%20Fiscal%20Year%202021%20-%20Presentation.pdf",
+      "section": "Printed pages 39\u201340"
+    }
   },
   "quarters": [
+    {
+      "quarter": "FY19 Q1",
+      "start": "2018-07-01",
+      "trips": 30563071,
+      "crimes": {
+        "homicide": 3,
+        "rape": 1,
+        "robbery": 83,
+        "aggravatedAssault": 32,
+        "electronicTheft": 203
+      },
+      "countMethod": "monthly-reconstruction",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2009%20CRB.pdf",
+      "crimeSection": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD September 2018 column; see crimeSources and crimeArithmetic for YTD subtraction and theft labels",
+      "crimeSources": [
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2009%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD September 2018 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2006%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD June 2018 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2018%20Monthly%20Reports%2012%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); Electronic Item Thefts, blue Theft By Snatching labels July\u2013September 2018"
+        }
+      ],
+      "crimeArithmetic": {
+        "homicide": "3 - 0",
+        "rape": "3 - 2",
+        "robbery": "235 - 152",
+        "aggravatedAssault": "100 - 68",
+        "electronicTheft": "82 + 71 + 50"
+      },
+      "crimeNotes": [
+        "Monthly performance measurements use unaudited BART Police/TriTech database data, may differ from official FBI UCR totals, and are subject to late reporting, reclassification, unfounding, updates and corrections. Exact printed labels/tables; not bar-height estimates. Source vintage transitions are not established changes in offense methodology.",
+        "The red Theft By Force or Fear series is electronic robbery, already included in robbery, and is excluded from electronicTheft.",
+        "YTD subtraction uses different report snapshots; corrections to earlier months can contribute to the difference. Exact published arithmetic, not a same-vintage incident-level quarterly extract."
+      ],
+      "months": [
+        {
+          "month": "2018-07",
+          "trips": 10122862,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201807.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2018-08",
+          "trips": 10639593,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201808.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2018-09",
+          "trips": 9800616,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201809.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY19 Q2",
+      "start": "2018-10-01",
+      "trips": 28895491,
+      "crimes": {
+        "homicide": 0,
+        "rape": 0,
+        "robbery": 110,
+        "aggravatedAssault": 30,
+        "electronicTheft": 214
+      },
+      "countMethod": "monthly-reconstruction",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2012%20CRB.pdf",
+      "crimeSection": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD December 2018 column; see crimeSources and crimeArithmetic for YTD subtraction and theft labels",
+      "crimeSources": [
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2012%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD December 2018 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2009%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); PART 1 CRIMES, YTD September 2018 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2018%20Monthly%20Reports%2012%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); Electronic Item Thefts, blue Theft By Snatching labels October\u2013December 2018"
+        }
+      ],
+      "crimeArithmetic": {
+        "homicide": "3 - 3",
+        "rape": "3 - 3",
+        "robbery": "345 - 235",
+        "aggravatedAssault": "130 - 100",
+        "electronicTheft": "60 + 65 + 89"
+      },
+      "crimeNotes": [
+        "Monthly performance measurements use unaudited BART Police/TriTech database data, may differ from official FBI UCR totals, and are subject to late reporting, reclassification, unfounding, updates and corrections. Exact printed labels/tables; not bar-height estimates. Source vintage transitions are not established changes in offense methodology.",
+        "Uses later retrospective 2018 robbery annual total 345 in December 2019, not the contemporaneous December 2018 total 349; hence robbery 110 rather than 114. Electronic theft has the December 2018 vintage.",
+        "YTD subtraction uses different report snapshots; corrections to earlier months can contribute to the difference. Exact published arithmetic, not a same-vintage incident-level quarterly extract."
+      ],
+      "months": [
+        {
+          "month": "2018-10",
+          "trips": 10978799,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201810.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2018-11",
+          "trips": 9147871,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201811.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2018-12",
+          "trips": 8768821,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2018.zip",
+          "file": "ridership_2018/Ridership_201812.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY19 Q3",
+      "start": "2019-01-01",
+      "trips": 28367679,
+      "crimes": {
+        "homicide": 1,
+        "rape": 5,
+        "robbery": 95,
+        "aggravatedAssault": 33,
+        "electronicTheft": 220
+      },
+      "countMethod": "monthly-reconstruction",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/03-2020%20Monthly%20Chief%27s%20Report%20CRB.pdf",
+      "crimeSection": "Performance Measurement Review \u2013 Systemwide, printed page 001 (PDF page 2); PART 1 UCR Crime, YTD 2019 column; see crimeSources and crimeArithmetic for YTD subtraction and theft labels",
+      "crimeSources": [
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/03-2020%20Monthly%20Chief%27s%20Report%20CRB.pdf",
+          "section": "Performance Measurement Review \u2013 Systemwide, printed page 001 (PDF page 2); PART 1 UCR Crime, YTD 2019 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2012%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); Electronic Item Thefts, blue Theft By Snatching labels January\u2013March 2019"
+        }
+      ],
+      "crimeArithmetic": {
+        "homicide": "YTD March 2019 = 1",
+        "rape": "YTD March 2019 = 5",
+        "robbery": "YTD March 2019 = 95",
+        "aggravatedAssault": "YTD March 2019 = 33",
+        "electronicTheft": "74 + 56 + 90"
+      },
+      "crimeNotes": [
+        "Monthly performance measurements use unaudited BART Police/TriTech database data, may differ from official FBI UCR totals, and are subject to late reporting, reclassification, unfounding, updates and corrections. Exact printed labels/tables; not bar-height estimates. Source vintage transitions are not established changes in offense methodology.",
+        "Uses the later March 2020 retrospective YTD 2019 table (homicide 1, rape 5), not the contemporaneous March 2019 table (homicide 0, rape 1). Monthly headings say PART 1 UCR Crime, but the report still warns database numbers may differ from reported UCR totals.",
+        "YTD subtraction uses different report snapshots; corrections to earlier months can contribute to the difference. Exact published arithmetic, not a same-vintage incident-level quarterly extract."
+      ],
+      "months": [
+        {
+          "month": "2019-01",
+          "trips": 9540752,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201901.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-02",
+          "trips": 8926329,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201902.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-03",
+          "trips": 9900598,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201903.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY19 Q4",
+      "start": "2019-04-01",
+      "trips": 30277600,
+      "crimes": {
+        "homicide": 0,
+        "rape": 1,
+        "robbery": 94,
+        "aggravatedAssault": 27,
+        "electronicTheft": 262
+      },
+      "countMethod": "monthly-reconstruction",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/06-2020%20Monthly%20Chief%27s%20Report%20CRB%2009082020.pdf",
+      "crimeSection": "Performance Measurement Review \u2013 Systemwide, printed page 001 (PDF page 2); PART 1 UCR Crime, YTD 2019 column; see crimeSources and crimeArithmetic for YTD subtraction and theft labels",
+      "crimeSources": [
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/06-2020%20Monthly%20Chief%27s%20Report%20CRB%2009082020.pdf",
+          "section": "Performance Measurement Review \u2013 Systemwide, printed page 001 (PDF page 2); PART 1 UCR Crime, YTD 2019 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/03-2020%20Monthly%20Chief%27s%20Report%20CRB.pdf",
+          "section": "Performance Measurement Review \u2013 Systemwide, printed page 001 (PDF page 2); PART 1 UCR Crime, YTD 2019 column"
+        },
+        {
+          "url": "https://www.bart.gov/sites/default/files/docs/2019%20Monthly%20Reports%2012%20CRB.pdf",
+          "section": "BART Police Performance Measurements, systemwide, printed page 017 (PDF page 19); Electronic Item Thefts, blue Theft By Snatching labels April\u2013June 2019"
+        }
+      ],
+      "crimeArithmetic": {
+        "homicide": "1 - 1",
+        "rape": "6 - 5",
+        "robbery": "189 - 95",
+        "aggravatedAssault": "60 - 33",
+        "electronicTheft": "80 + 103 + 79"
+      },
+      "crimeNotes": [
+        "Monthly performance measurements use unaudited BART Police/TriTech database data, may differ from official FBI UCR totals, and are subject to late reporting, reclassification, unfounding, updates and corrections. Exact printed labels/tables; not bar-height estimates. Source vintage transitions are not established changes in offense methodology.",
+        "Uses later retrospective March/June 2020 YTD 2019 tables. Three theft labels are also visible unchanged in the March 2020 rolling Electronic Theft chart, labeled Theft separately from Robbery.",
+        "YTD subtraction uses different report snapshots; corrections to earlier months can contribute to the difference. Exact published arithmetic, not a same-vintage incident-level quarterly extract."
+      ],
+      "months": [
+        {
+          "month": "2019-04",
+          "trips": 10217568,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201904.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-05",
+          "trips": 10228712,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201905.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-06",
+          "trips": 9831320,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201906.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY20 Q1",
+      "start": "2019-07-01",
+      "trips": 30286863,
+      "crimes": {
+        "homicide": 0,
+        "rape": 0,
+        "robbery": 82,
+        "aggravatedAssault": 23,
+        "electronicTheft": 248
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Quarterly%20Service%20Performance%20Review%20-%20Third%20Quarter%20Fiscal%20year%202021%20-%20Presentation.pdf",
+      "crimeSection": "Crimes Against Persons \u2013 Crimes Detail by Category, printed page 42 (PDF page 42), FY20 Q1 column",
+      "crimeNotes": [
+        "Robbery parenthetical electronic-robbery counts are subsets of total robbery and are not separately added. These FY20 category counts are unchanged across the checked FY21Q2/FY21Q3/FY21Q4/FY22Q1/FY22Q2 presentations where each quarter appears.",
+        "Electronic theft crosscheck: December 2019 police monthly report printed page 017 (PDF page 19), Theft By Snatching labels July101 + August70 + September77 = 248 exactly matches QPR; four-category monthly YTD differences do not fully reconcile with QPR revisions."
+      ],
+      "months": [
+        {
+          "month": "2019-07",
+          "trips": 10037437,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201907.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-08",
+          "trips": 10329856,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201908.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-09",
+          "trips": 9919570,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201909.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY20 Q2",
+      "start": "2019-10-01",
+      "trips": 28549684,
+      "crimes": {
+        "homicide": 1,
+        "rape": 1,
+        "robbery": 109,
+        "aggravatedAssault": 26,
+        "electronicTheft": 238
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/AGM%20QPR_FY21%20Q4%20FINAL.pdf",
+      "crimeSection": "Crimes Against Persons \u2013 Crimes Detail by Category, printed page 42 (PDF page 42), FY20 Q2 column",
+      "crimeNotes": [
+        "Robbery parenthetical electronic-robbery counts are subsets of total robbery and are not separately added. These FY20 category counts are unchanged across the checked FY21Q2/FY21Q3/FY21Q4/FY22Q1/FY22Q2 presentations where each quarter appears.",
+        "Electronic theft crosscheck: December 2019 police monthly report printed page 017 (PDF page 19), Theft By Snatching labels October99 + November78 + December61 = 238 exactly matches QPR; four-category monthly YTD differences do not fully reconcile with QPR revisions."
+      ],
+      "months": [
+        {
+          "month": "2019-10",
+          "trips": 10680506,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201910.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-11",
+          "trips": 9127400,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201911.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2019-12",
+          "trips": 8741778,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2019.zip",
+          "file": "ridership_2019/Ridership_201912.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY20 Q3",
+      "start": "2020-01-01",
+      "trips": 22425412,
+      "crimes": {
+        "homicide": 0,
+        "rape": 2,
+        "robbery": 82,
+        "aggravatedAssault": 23,
+        "electronicTheft": 108
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/QPR_FY22%20Q1%20111220211200%20FINAL.pdf",
+      "crimeSection": "Crimes Against Persons \u2013 Crimes Detail by Category, printed page 43 (PDF page 43), FY20 Q3 column",
+      "crimeNotes": [
+        "Robbery parenthetical electronic-robbery counts are subsets of total robbery and are not separately added. These FY20 category counts are unchanged across the checked FY21Q2/FY21Q3/FY21Q4/FY22Q1/FY22Q2 presentations where each quarter appears."
+      ],
+      "months": [
+        {
+          "month": "2020-01",
+          "trips": 9358806,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202001.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-02",
+          "trips": 8976810,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202002.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-03",
+          "trips": 4089796,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202003.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY20 Q4",
+      "start": "2020-04-01",
+      "trips": 2417690,
+      "crimes": {
+        "homicide": 0,
+        "rape": 0,
+        "robbery": 50,
+        "aggravatedAssault": 27,
+        "electronicTheft": 33
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/QPR_FY22%20Q2%2003022_FINAL.pdf",
+      "crimeSection": "Crimes Against Persons \u2013 Crimes Detail by Category, printed page 43 (PDF page 42), FY20 Q4 column",
+      "crimeNotes": [
+        "Robbery parenthetical electronic-robbery counts are subsets of total robbery and are not separately added. These FY20 category counts are unchanged across the checked FY21Q2/FY21Q3/FY21Q4/FY22Q1/FY22Q2 presentations where each quarter appears."
+      ],
+      "months": [
+        {
+          "month": "2020-04",
+          "trips": 631371,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202004.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-05",
+          "trips": 736590,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202005.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-06",
+          "trips": 1049729,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202006.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
     {
       "quarter": "FY21 Q1",
       "start": "2020-07-01",
