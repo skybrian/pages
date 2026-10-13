@@ -73,6 +73,7 @@ export async function renderInitialCharts(inputPath, part = "charts") {
 async function findChartEntries(directory) {
   const entries = [];
   for (const item of await readdir(directory, { withFileTypes: true })) {
+    if (item.isDirectory() && item.name === "tests") continue;
     const path = join(directory, item.name);
     if (item.isDirectory()) entries.push(...await findChartEntries(path));
     else if (item.isFile() && item.name === "chart.ts") {

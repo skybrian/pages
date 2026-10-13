@@ -8,6 +8,7 @@ import { chartVendors } from "./scripts/chart-vendor.js";
  *   addFilter: (name: string, callback: (...values: any[]) => string | Promise<string>) => void,
  *   addGlobalData: (name: string, value: unknown) => void,
  *   addWatchTarget: (target: string) => void,
+ *   ignores: Set<string>,
  *   on: (event: string, callback: (eventArgs: {
  *     directories: { output: string },
  *     outputMode: string,
@@ -24,6 +25,9 @@ export default async function (eleventyConfig) {
   const previewMode = isPreviewRunMode(process.env.ELEVENTY_RUN_MODE);
   eleventyConfig.addGlobalData("previewMode", previewMode);
   eleventyConfig.addGlobalData("chartVendors", chartVendors);
+  // Page-local tests are source code, never templates or published passthrough
+  // assets (including image and JSON fixtures).
+  eleventyConfig.ignores.add("src/pages/**/tests/**");
   eleventyConfig.addGlobalData("previewRibbonStyles", PREVIEW_RIBBON_STYLES);
   eleventyConfig.addFilter("previewSourceUrl", previewSourceUrl);
   eleventyConfig.addFilter("initialCharts", renderInitialCharts);
@@ -45,11 +49,15 @@ export default async function (eleventyConfig) {
 
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
   eleventyConfig.addPassthroughCopy({ "src/_redirects": "_redirects" });
-  // Keep referenced post images alongside each page's generated HTML.
-  eleventyConfig.addPassthroughCopy("src/pages/**/*.{png,jpg,jpeg,gif,webp,avif,svg}", {
+  // Keep referenced post images/data alongside page HTML, but never publish
+  // page-local test fixtures. Passthrough globs need their own exclusion:
+  // Eleventy's general ignore list does not apply to passthrough copies.
+  eleventyConfig.addPassthroughCopy("src/pages/!(**/tests/**)/*.{png,jpg,jpeg,gif,webp,avif,svg}", {
     mode: "html-relative",
   });
-  eleventyConfig.addPassthroughCopy("src/pages/**/data.json", { mode: "html-relative" });
+  eleventyConfig.addPassthroughCopy("src/pages/!(**/tests/**)/data.json", {
+    mode: "html-relative",
+  });
   eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
 
   if (process.env.ELEVENTY_RUN_MODE === "serve") {

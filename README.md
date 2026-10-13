@@ -69,8 +69,12 @@ generated page's Source ribbon remain available.
 Preview-only server-rendered pages can be authored as `.tsx` files under
 `preview/`. The preview config loads their TypeScript entry points with the
 scoped `tsx` loader, and `preview/render.tsx` provides `renderDocument()` for
-rendering Preact children as complete HTML documents. Run `npm test` to execute
-the TypeScript and TSX preview tests.
+rendering Preact children as complete HTML documents. Shared tests live in
+`tests/`, preview tests in `preview/`, and page-specific tests can live under
+`src/pages/<year>/<page>/tests/` (including nested test files). `npm test`
+recursively discovers `.test.ts` and `.test.tsx` entry points in those
+locations; helpers and fixture directories are not run as tests. Page test
+directories are excluded from generated pages and passthrough assets.
 
 Enable the pre-commit typecheck hook for this worktree with:
 
