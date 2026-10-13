@@ -1,6 +1,6 @@
 # Page authoring
 
-These conventions apply to pages under `src/pages/`. See the [README](../../README.md)
+These conventions apply to pages under `src/pages/`. See [development and maintenance](../../DEVELOPMENT.md)
 for development commands, preview tools, and build/runtime architecture.
 
 ## Page locations and URLs
