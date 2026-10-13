@@ -1,0 +1,931 @@
+{
+  "metadata": {
+    "retrieved": "2026-10-12",
+    "definition": "Homicide + rape + robbery + aggravated assault + electronic theft. Electronic robbery is a subset of robbery, not an additional category.",
+    "rateFormula": "sum(crimes) / trips * 1000000",
+    "tripDefinition": "Sum of monthly origin-destination Total Trips grand totals. These are trips, not unique riders.",
+    "reportingBreak": "2025-01-01",
+    "reportingBreakExplanation": "UCR before January 2025; NIBRS from January 2025. Offense counts across the break are not directly comparable.",
+    "newsArticle": "https://www.bart.gov/news/articles/2026/news20260908",
+    "limitations": [
+      "Reconstructed series: not the unpublished table behind the news graphic. Original rates and retrospective graphics differ from category counts.",
+      "Seven quarters use bar heights rounded to integer counts; retain digitized-bars flags as estimates.",
+      "Uses report vintages identified on each row, including revisions of earlier quarters.",
+      "Some source PDFs contain raster graphics; the FY24 Q1 file is a PowerPoint archive despite its PDF extension."
+    ]
+  },
+  "quarters": [
+    {
+      "quarter": "FY21 Q1",
+      "start": "2020-07-01",
+      "trips": 3580219,
+      "crimes": {
+        "robbery": 60,
+        "electronicTheft": 35,
+        "aggravatedAssault": 29,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/QPR_FY22%20Q2%2003022_FINAL.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY21 Q1 column",
+      "months": [
+        {
+          "month": "2020-07",
+          "trips": 1193988,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202007.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-08",
+          "trips": 1169259,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202008.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-09",
+          "trips": 1216972,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202009.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY21 Q2",
+      "start": "2020-10-01",
+      "trips": 3797124,
+      "crimes": {
+        "robbery": 60,
+        "electronicTheft": 58,
+        "aggravatedAssault": 16,
+        "rape": 3,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY21 Q2 column",
+      "months": [
+        {
+          "month": "2020-10",
+          "trips": 1400213,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202010.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-11",
+          "trips": 1251984,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202011.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2020-12",
+          "trips": 1144927,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2020.zip",
+          "file": "ridership_2020/Ridership_202012.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY21 Q3",
+      "start": "2021-01-01",
+      "trips": 3561047,
+      "crimes": {
+        "robbery": 42,
+        "electronicTheft": 25,
+        "aggravatedAssault": 10,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY21 Q3 column",
+      "months": [
+        {
+          "month": "2021-01",
+          "trips": 1047040,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202101.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-02",
+          "trips": 1116617,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202102.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-03",
+          "trips": 1397390,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202103.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY21 Q4",
+      "start": "2021-04-01",
+      "trips": 5193928,
+      "crimes": {
+        "robbery": 29,
+        "electronicTheft": 23,
+        "aggravatedAssault": 21,
+        "rape": 3,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY21 Q4 column",
+      "months": [
+        {
+          "month": "2021-04",
+          "trips": 1507948,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202104.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-05",
+          "trips": 1679376,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202105.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-06",
+          "trips": 2006604,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202106.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY22 Q1",
+      "start": "2021-07-01",
+      "trips": 7490749,
+      "crimes": {
+        "robbery": 33,
+        "electronicTheft": 30,
+        "aggravatedAssault": 20,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY22 Q1 column",
+      "months": [
+        {
+          "month": "2021-07",
+          "trips": 2251727,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202107.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-08",
+          "trips": 2487088,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202108.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-09",
+          "trips": 2751934,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202109.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY22 Q2",
+      "start": "2021-10-01",
+      "trips": 8337585,
+      "crimes": {
+        "robbery": 39,
+        "electronicTheft": 25,
+        "aggravatedAssault": 20,
+        "rape": 5,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY22 Q2 column",
+      "months": [
+        {
+          "month": "2021-10",
+          "trips": 2874108,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202110.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-11",
+          "trips": 2797609,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202111.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2021-12",
+          "trips": 2665868,
+          "url": "https://www.bart.gov/sites/default/files/docs/ridership_2021.zip",
+          "file": "ridership_2021/Ridership_202112.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY22 Q3",
+      "start": "2022-01-01",
+      "trips": 8052743,
+      "crimes": {
+        "robbery": 39,
+        "electronicTheft": 41,
+        "aggravatedAssault": 17,
+        "rape": 2,
+        "homicide": 2
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY22 Q3 column",
+      "months": [
+        {
+          "month": "2022-01",
+          "trips": 2186425,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202201.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-02",
+          "trips": 2522314,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202202.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-03",
+          "trips": 3344004,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202203.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY22 Q4",
+      "start": "2022-04-01",
+      "trips": 10668610,
+      "crimes": {
+        "robbery": 53,
+        "electronicTheft": 40,
+        "aggravatedAssault": 33,
+        "rape": 2,
+        "homicide": 0
+      },
+      "countMethod": "table",
+      "crimeSource": "https://www.bart.gov/sites/default/files/docs/Final%20QPR_FY22%20Q4.pdf",
+      "crimeSection": "Crimes Detail by Category, printed page 42, FY22 Q4 column",
+      "months": [
+        {
+          "month": "2022-04",
+          "trips": 3375449,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202204.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-05",
+          "trips": 3543655,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202205.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-06",
+          "trips": 3749506,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202206.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY23 Q1",
+      "start": "2022-07-01",
+      "trips": 11426492,
+      "crimes": {
+        "robbery": 64,
+        "electronicTheft": 41,
+        "aggravatedAssault": 31,
+        "rape": 0,
+        "homicide": 1
+      },
+      "countMethod": "embedded-chart-data",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2023-11/QPR_Report%20FY24%20Q1%20FINAL_0.pptx",
+      "crimeSection": "PowerPoint embedded chart68.xml, FY23 Q1 category values",
+      "months": [
+        {
+          "month": "2022-07",
+          "trips": 3442820,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202207.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-08",
+          "trips": 3916544,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202208.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-09",
+          "trips": 4067128,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202209.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY23 Q2",
+      "start": "2022-10-01",
+      "trips": 10985153,
+      "crimes": {
+        "robbery": 69,
+        "electronicTheft": 65,
+        "aggravatedAssault": 33,
+        "rape": 3,
+        "homicide": 1
+      },
+      "countMethod": "embedded-chart-data",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2023-11/QPR_Report%20FY24%20Q1%20FINAL_0.pptx",
+      "crimeSection": "PowerPoint embedded chart68.xml, FY23 Q2 category values",
+      "months": [
+        {
+          "month": "2022-10",
+          "trips": 4058960,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202210.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-11",
+          "trips": 3623335,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202211.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2022-12",
+          "trips": 3302858,
+          "url": "https://www.bart.gov/sites/default/files/docs/Ridership_2022.zip",
+          "file": "Ridership_2022/Ridership_202212.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY23 Q3",
+      "start": "2023-01-01",
+      "trips": 10746247,
+      "crimes": {
+        "robbery": 49,
+        "electronicTheft": 44,
+        "aggravatedAssault": 37,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "embedded-chart-data",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2023-11/QPR_Report%20FY24%20Q1%20FINAL_0.pptx",
+      "crimeSection": "PowerPoint embedded chart68.xml, FY23 Q3 category values",
+      "months": [
+        {
+          "month": "2023-01",
+          "trips": 3310812,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202301.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-02",
+          "trips": 3456072,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202302.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-03",
+          "trips": 3979363,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202303.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY23 Q4",
+      "start": "2023-04-01",
+      "trips": 12178309,
+      "crimes": {
+        "robbery": 66,
+        "electronicTheft": 42,
+        "aggravatedAssault": 41,
+        "rape": 3,
+        "homicide": 0
+      },
+      "countMethod": "embedded-chart-data",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2023-11/QPR_Report%20FY24%20Q1%20FINAL_0.pptx",
+      "crimeSection": "PowerPoint embedded chart68.xml, FY23 Q4 category values",
+      "months": [
+        {
+          "month": "2023-04",
+          "trips": 3885385,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202304.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-05",
+          "trips": 4133709,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202305.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-06",
+          "trips": 4159215,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202306.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY24 Q1",
+      "start": "2023-07-01",
+      "trips": 12596630,
+      "crimes": {
+        "robbery": 60,
+        "electronicTheft": 73,
+        "aggravatedAssault": 38,
+        "rape": 1,
+        "homicide": 1
+      },
+      "countMethod": "embedded-chart-data",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2023-11/QPR_Report%20FY24%20Q1%20FINAL_0.pptx",
+      "crimeSection": "PowerPoint embedded chart68.xml, FY24 Q1 category values",
+      "months": [
+        {
+          "month": "2023-07",
+          "trips": 3916452,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202307.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-08",
+          "trips": 4477455,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202308.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-09",
+          "trips": 4202723,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202309.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY24 Q2",
+      "start": "2023-10-01",
+      "trips": 12038372,
+      "crimes": {
+        "robbery": 60,
+        "electronicTheft": 48,
+        "aggravatedAssault": 42,
+        "rape": 3,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2024-08/Quarterly%20Service%20Performance%20Review%20-%20Fourth%20Quarter%20Fiscal%20Year%202024%20-%20Presentation.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY24 Q2 bars",
+      "months": [
+        {
+          "month": "2023-10",
+          "trips": 4432027,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202310.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-11",
+          "trips": 3980362,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202311.xlsx",
+          "sheet": "Total Trips OD"
+        },
+        {
+          "month": "2023-12",
+          "trips": 3625983,
+          "url": "https://www.bart.gov/sites/default/files/2024-02/ridership_2023.zip",
+          "file": "Ridership_202312.xlsx",
+          "sheet": "Total Trips OD"
+        }
+      ]
+    },
+    {
+      "quarter": "FY24 Q3",
+      "start": "2024-01-01",
+      "trips": 11931571,
+      "crimes": {
+        "robbery": 61,
+        "electronicTheft": 75,
+        "aggravatedAssault": 31,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2024-08/Quarterly%20Service%20Performance%20Review%20-%20Fourth%20Quarter%20Fiscal%20Year%202024%20-%20Presentation.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY24 Q3 bars",
+      "months": [
+        {
+          "month": "2024-01",
+          "trips": 3844643,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202401.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-02",
+          "trips": 3917031,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202402.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-03",
+          "trips": 4169897,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202403.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY24 Q4",
+      "start": "2024-04-01",
+      "trips": 12785670,
+      "crimes": {
+        "robbery": 49,
+        "electronicTheft": 63,
+        "aggravatedAssault": 30,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-09/Quarterly%20Performance%20Review%20%28QPR%29%204th%20Quarter%20Fiscal%20Year%202025_FINAL.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY24 Q4 bars",
+      "months": [
+        {
+          "month": "2024-04",
+          "trips": 4223784,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202404.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-05",
+          "trips": 4441331,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202405.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-06",
+          "trips": 4120555,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202406.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY25 Q1",
+      "start": "2024-07-01",
+      "trips": 13283052,
+      "crimes": {
+        "robbery": 57,
+        "electronicTheft": 45,
+        "aggravatedAssault": 47,
+        "rape": 0,
+        "homicide": 1
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-09/Quarterly%20Performance%20Review%20%28QPR%29%204th%20Quarter%20Fiscal%20Year%202025_FINAL.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY25 Q1 bars",
+      "months": [
+        {
+          "month": "2024-07",
+          "trips": 4207970,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202407.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-08",
+          "trips": 4482470,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202408.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-09",
+          "trips": 4592612,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202409.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY25 Q2",
+      "start": "2024-10-01",
+      "trips": 12656087,
+      "crimes": {
+        "robbery": 42,
+        "electronicTheft": 43,
+        "aggravatedAssault": 35,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-09/Quarterly%20Performance%20Review%20%28QPR%29%204th%20Quarter%20Fiscal%20Year%202025_FINAL.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY25 Q2 bars",
+      "months": [
+        {
+          "month": "2024-10",
+          "trips": 4831431,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202410.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-11",
+          "trips": 3950428,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202411.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2024-12",
+          "trips": 3874228,
+          "url": "https://www.bart.gov/sites/default/files/2025-02/ridership_2024.zip",
+          "file": "Ridership_202412.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY25 Q3",
+      "start": "2025-01-01",
+      "trips": 12696207,
+      "crimes": {
+        "robbery": 21,
+        "electronicTheft": 21,
+        "aggravatedAssault": 37,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-09/Quarterly%20Performance%20Review%20%28QPR%29%204th%20Quarter%20Fiscal%20Year%202025_FINAL.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY25 Q3 bars",
+      "months": [
+        {
+          "month": "2025-01",
+          "trips": 4151331,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202501.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-02",
+          "trips": 4030808,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202502.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-03",
+          "trips": 4514068,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202503.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY25 Q4",
+      "start": "2025-04-01",
+      "trips": 14078880,
+      "crimes": {
+        "robbery": 12,
+        "electronicTheft": 15,
+        "aggravatedAssault": 38,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "digitized-bars",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-09/Quarterly%20Performance%20Review%20%28QPR%29%204th%20Quarter%20Fiscal%20Year%202025_FINAL.pdf",
+      "crimeSection": "Crime \u2013 Against Persons, printed page 32, FY25 Q4 bars",
+      "months": [
+        {
+          "month": "2025-04",
+          "trips": 4736423,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202504.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-05",
+          "trips": 4670575,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202505.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-06",
+          "trips": 4671882,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202506.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY26 Q1",
+      "start": "2025-07-01",
+      "trips": 14683945,
+      "crimes": {
+        "robbery": 18,
+        "electronicTheft": 13,
+        "aggravatedAssault": 45,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "printed-counts",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2025-11/Quarterly%20Service%20Performance%20Review%20-%20FY261Q%20-%20Presentation%20%281%29.pdf",
+      "crimeSection": "Security & Crime: Crimes Against Persons by Category and Electronic Theft",
+      "months": [
+        {
+          "month": "2025-07",
+          "trips": 4713700,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202507.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-08",
+          "trips": 4923124,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202508.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-09",
+          "trips": 5047121,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202509.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY26 Q2",
+      "start": "2025-10-01",
+      "trips": 14151755,
+      "crimes": {
+        "robbery": 31,
+        "electronicTheft": 37,
+        "aggravatedAssault": 34,
+        "rape": 2,
+        "homicide": 0
+      },
+      "countMethod": "printed-counts",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2026-02/QPR%20-%202nd%20Quarter%20FY26%20-%20Report.pdf",
+      "crimeSection": "Security & Crime: Crimes Against Persons by Category and Electronic Theft",
+      "months": [
+        {
+          "month": "2025-10",
+          "trips": 5346891,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202510.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-11",
+          "trips": 4409065,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202511.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2025-12",
+          "trips": 4395799,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/ridership_OD_2025.zip",
+          "file": "Ridership_202512.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY26 Q3",
+      "start": "2026-01-01",
+      "trips": 14539759,
+      "crimes": {
+        "robbery": 16,
+        "electronicTheft": 12,
+        "aggravatedAssault": 32,
+        "rape": 1,
+        "homicide": 0
+      },
+      "countMethod": "printed-counts",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2026-05/QPR_Report%20FY26%20Q3_FINAL.pdf",
+      "crimeSection": "Security & Crime: Crimes Against Persons by Category and Electronic Theft",
+      "months": [
+        {
+          "month": "2026-01",
+          "trips": 4596545,
+          "url": "https://www.bart.gov/sites/default/files/2026-02/Ridership_202601.xlsx",
+          "file": "ridership-5.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2026-02",
+          "trips": 4540045,
+          "url": "https://www.bart.gov/sites/default/files/2026-03/Ridership_202602.xlsx",
+          "file": "ridership-4.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2026-03",
+          "trips": 5403169,
+          "url": "https://www.bart.gov/sites/default/files/2026-04/Ridership_202603.xlsx",
+          "file": "ridership-3.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    },
+    {
+      "quarter": "FY26 Q4",
+      "start": "2026-04-01",
+      "trips": 16030982,
+      "crimes": {
+        "robbery": 9,
+        "electronicTheft": 10,
+        "aggravatedAssault": 40,
+        "rape": 0,
+        "homicide": 0
+      },
+      "countMethod": "printed-counts",
+      "crimeSource": "https://www.bart.gov/sites/default/files/2026-09/QPR_Report%20FY26%20Q4_FINAL.pdf",
+      "crimeSection": "Security & Crime: Crimes Against Persons by Category and Electronic Theft",
+      "months": [
+        {
+          "month": "2026-04",
+          "trips": 5250519,
+          "url": "https://www.bart.gov/sites/default/files/2026-05/Ridership_202604.xlsx",
+          "file": "ridership-2.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2026-05",
+          "trips": 5239925,
+          "url": "https://www.bart.gov/sites/default/files/2026-06/Ridership_202605.xlsx",
+          "file": "ridership-1.xlsx",
+          "sheet": "Total Trips"
+        },
+        {
+          "month": "2026-06",
+          "trips": 5540538,
+          "url": "https://www.bart.gov/sites/default/files/2026-07/Ridership_202606.xlsx",
+          "file": "ridership-0.xlsx",
+          "sheet": "Total Trips"
+        }
+      ]
+    }
+  ]
+}
