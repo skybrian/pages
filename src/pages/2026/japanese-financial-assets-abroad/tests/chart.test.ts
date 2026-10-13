@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { it } from "node:test";
 import { JSDOM } from "jsdom";
-import chart from "../src/pages/2026/japanese-financial-assets-abroad/chart.ts";
+import chart from "../chart.ts";
 
 const data = JSON.parse(await readFile(
-  "src/pages/2026/japanese-financial-assets-abroad/data.json", "utf8",
+  new URL("../data.json", import.meta.url), "utf8",
 )) as Array<Record<string, number>>;
-const markdown = await readFile("src/pages/2026/japanese-financial-assets-abroad/index.md", "utf8");
+const markdown = await readFile(new URL("../index.md", import.meta.url), "utf8");
 
 it("preserves the full-precision 1996–2025 dataset and source notes", () => {
   assert.equal(data.length, 30);

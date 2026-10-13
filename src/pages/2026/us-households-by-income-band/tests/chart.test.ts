@@ -3,9 +3,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { it } from "node:test";
 import { JSDOM } from "jsdom";
-import definition from "../src/pages/2026/us-households-by-income-band/chart.ts";
+import definition from "../chart.ts";
 
-const dataBytes = await readFile("src/pages/2026/us-households-by-income-band/data.json");
+const dataBytes = await readFile(new URL("../data.json", import.meta.url));
 const rows = definition.parseData(JSON.parse(dataBytes.toString("utf8")));
 
 it("preserves the complete original 1967–2024 dataset", () => {
