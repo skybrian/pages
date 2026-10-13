@@ -76,6 +76,13 @@ recursively discovers `.test.ts` and `.test.tsx` entry points in those
 locations; helpers and fixture directories are not run as tests. Page test
 directories are excluded from generated pages and passthrough assets.
 
+`npm test` creates one isolated site build and shares its output with every
+test process, then removes it even if building or testing fails. Test-runner
+arguments are forwarded (for example, `npm test -- --test-name-pattern="URLs"`).
+For a focused file run, invoke this from the repository root:
+`node --import tsx --test path/to/test.test.ts`; site-output tests lazily build
+their own private output and remove it when the test process finishes.
+
 Enable the pre-commit typecheck hook for this worktree with:
 
 ```sh

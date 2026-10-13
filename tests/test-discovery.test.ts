@@ -38,6 +38,7 @@ test("discovers shared and nested page test entry points, not helpers or fixture
     "src/pages/2026/example/tests/__fixtures__/fixture.test.ts",
     "src/pages/2026/example/test-data.test.ts",
     "src/pages/2026/nested/category/example/tests/deep.test.ts",
+    "src/pages/2026/fixtures/tests/page.test.ts",
     "src/pages/2026/other/index.md",
   ]) {
     await touch(root, file);
@@ -49,6 +50,7 @@ test("discovers shared and nested page test entry points, not helpers or fixture
     "preview/nested/future.test.tsx",
     "src/pages/2026/example/tests/nested/another.test.tsx",
     "src/pages/2026/example/tests/page.test.ts",
+    "src/pages/2026/fixtures/tests/page.test.ts",
     "src/pages/2026/nested/category/example/tests/deep.test.ts",
     "tests/shared.test.ts",
   ].sort());

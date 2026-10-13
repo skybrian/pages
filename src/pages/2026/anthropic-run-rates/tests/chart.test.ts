@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { it } from "node:test";
 import { JSDOM } from "jsdom";
+import { assertStaticChartParity } from "../../../../../tests/helpers/static-chart.ts";
 import chart from "../chart.ts";
 
 const data = JSON.parse(await readFile(
   new URL("../data.json", import.meta.url), "utf8",
 )) as Array<Record<string, unknown>>;
 const markdown = await readFile(new URL("../index.md", import.meta.url), "utf8");
+
+it("preserves static chart geometry and labels when enhanced", async () => {
+  await assertStaticChartParity(new URL("../", import.meta.url), chart);
+});
 
 it("preserves all reported milestones, labels, sources, and the May date caveat", () => {
   assert.deepEqual(data.map((row) => [row.date, row.value, row.label]), [

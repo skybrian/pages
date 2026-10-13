@@ -1,4 +1,5 @@
-import { readdir } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,7 +51,7 @@ export async function discoverTestFiles(root) {
       throw error;
     });
     for (const entry of entries) {
-      if (!entry.isDirectory() || FIXTURE_DIRECTORY.test(entry.name)) continue;
+      if (!entry.isDirectory()) continue;
       const child = join(directory, entry.name);
       if (entry.name === "tests") {
         pageTests.push(...await walk(child, (file) => TEST_FILE.test(file.name)));
@@ -65,10 +66,32 @@ export async function discoverTestFiles(root) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const files = await discoverTestFiles(repositoryRoot);
-  const result = spawnSync(process.execPath, ["--import", "tsx", "--test", ...process.argv.slice(2), ...files], {
-    cwd: repositoryRoot,
-    stdio: "inherit",
-  });
-  if (result.error) throw result.error;
-  process.exitCode = result.status ?? 1;
+  const temporaryRoot = await mkdtemp(join(os.tmpdir(), "pages-test-run-"));
+  const output = join(temporaryRoot, "site");
+  try {
+    const build = spawnSync(process.execPath, [
+      join(repositoryRoot, "node_modules/@11ty/eleventy/cmd.cjs"),
+      `--output=${output}`,
+    ], {
+      cwd: repositoryRoot,
+      env: { ...process.env, ELEVENTY_RUN_MODE: "build" },
+      stdio: "inherit",
+    });
+    if (build.error) throw build.error;
+    if (build.status !== 0) {
+      process.exitCode = build.status ?? 1;
+    } else {
+      const tests = spawnSync(process.execPath, [
+        "--import", "tsx", "--test", ...process.argv.slice(2), ...files,
+      ], {
+        cwd: repositoryRoot,
+        env: { ...process.env, PAGES_TEST_SITE_OUTPUT: output },
+        stdio: "inherit",
+      });
+      if (tests.error) throw tests.error;
+      process.exitCode = tests.status ?? 1;
+    }
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 }

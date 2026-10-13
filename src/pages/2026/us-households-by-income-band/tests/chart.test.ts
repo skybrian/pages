@@ -3,10 +3,15 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { it } from "node:test";
 import { JSDOM } from "jsdom";
+import { assertStaticChartParity } from "../../../../../tests/helpers/static-chart.ts";
 import definition from "../chart.ts";
 
 const dataBytes = await readFile(new URL("../data.json", import.meta.url));
 const rows = definition.parseData(JSON.parse(dataBytes.toString("utf8")));
+
+it("preserves static chart geometry and labels when enhanced", async () => {
+  await assertStaticChartParity(new URL("../", import.meta.url), definition);
+});
 
 it("preserves the complete original 1967–2024 dataset", () => {
   assert.equal(rows.length, 58);
