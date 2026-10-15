@@ -75,9 +75,10 @@ export default defineChartPage<Point[]>({
         document, width, height: renderHeight,
         marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,
         marginBottom: 62, marginLeft: compact ? 48 : 62,
-        x: { type: "utc", domain: [new Date("2025-12-31T00:00:00Z"), new Date("2026-07-31T00:00:00Z")],
-          ticks: compact ? [new Date("2025-12-31T00:00:00Z"), new Date("2026-04-01T00:00:00Z"), new Date("2026-07-31T00:00:00Z")] : 5,
-          tickFormat: (d) => new Date(d).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", year: "2-digit" }), label: null },
+        x: { type: "utc", domain: [new Date("2025-12-31T00:00:00Z"), new Date("2026-09-30T00:00:00Z")],
+          ticks: ["2025-12-31", "2026-03-31", "2026-06-30", "2026-09-30"]
+            .map((date) => new Date(`${date}T00:00:00Z`)),
+          tickFormat: (d) => new Date(d).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" }), label: null },
         y: { domain: [0, 70], ticks: 8, label: null, grid: true },
         marks: [
           Plot.line(points, { x: "dateValue", y: "value", stroke: "#2457a7", strokeWidth: 3 }),

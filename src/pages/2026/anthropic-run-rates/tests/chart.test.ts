@@ -35,6 +35,23 @@ it("preserves all reported milestones and labels", () => {
   ]);
 });
 
+it("uses quarter-end run-rate ticks through Q3 without extrapolating the data", () => {
+  const view = chart.charts.find((view) => view.id === "run-rate")!;
+  const document = new JSDOM("").window.document;
+  for (const width of [350, 720, 1200]) {
+    for (const mode of ["static", "interactive", "preview"] as const) {
+      const svg = view.render(chart.parseData(data), { document, width, height: 400, mode });
+      const ticks = [...svg.querySelectorAll('g[aria-label="x-axis tick label"] text')];
+      assert.deepEqual(ticks.map((tick) => tick.textContent), ["Dec 31", "Mar 31", "Jun 30", "Sep 30"]);
+      const circles = [...svg.querySelectorAll("circle")];
+      assert.equal(circles.length, 6);
+      const lastPointX = Number(circles.at(-1)!.getAttribute("cx"));
+      const lastTickX = Number(ticks.at(-1)!.getAttribute("transform")!.match(/translate\(([^,]+)/)![1]);
+      assert.ok(lastPointX < lastTickX, "the July milestone must remain before the Q3 endpoint");
+    }
+  }
+});
+
 it("renders quarterly revenue separately from run-rate milestones at every size", () => {
   const quarterly = chart.charts.find((view) => view.id === "quarterly-revenue")!;
   assert.deepEqual(data.filter((row) => row.series === "quarterly").map((row) => [row.date, row.value]), [
