@@ -1,10 +1,22 @@
 ---
-title: A chart of Anthropic run-rate revenue
+title: Anthropic revenue and run rate
 date: 2026-10-01
 layout: chart-page.njk
 ---
 
-## Data points and sources
+Quarterly revenue is money earned over three months; an annual run rate extrapolates revenue at a point in time to a full year. The two charts keep these measures separate. Quarterly figures are not annualized here.
+
+## Quarterly revenue
+
+| Quarter | Revenue |
+| --- | ---: |
+| Q1 2026 (Jan–Mar) | ~$4.8B |
+| Q2 2026 (Apr–Jun) | $11.5B |
+| Q3 2026 (Jul–Sep) | $16.8B |
+
+Source: [Simon Willison · Oct. 15, 2026](https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/), summarizing [Financial Times reporting](https://www.ft.com/content/11632d03-358c-454b-af95-d06d4072932b) on figures Anthropic told investors. These are reported figures, not independently verified financial statements.
+
+## Annual run-rate milestones
 
 | Date represented | Annual run rate | Source |
 | --- | ---: | --- |

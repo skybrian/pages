@@ -4,7 +4,7 @@ import { defineChartPage } from "../../../charts/definition.ts";
 interface Point {
   date: string;
   value: number;
-  series: string;
+  series: "runrate" | "quarterly";
   label: string;
   dateText: string;
   source: string;
@@ -12,17 +12,21 @@ interface Point {
 }
 
 function parseData(value: unknown): Point[] {
-  if (!Array.isArray(value) || value.length === 0) throw new TypeError("Expected run-rate data.");
-  return value.map((item, index) => {
+  if (!Array.isArray(value) || value.length === 0) throw new TypeError("Expected revenue data.");
+  const points = value.map((item, index) => {
     if (!item || typeof item !== "object") throw new TypeError(`Invalid point ${index}.`);
     const row = item as Record<string, unknown>;
     if (typeof row.date !== "string" || !Number.isFinite(Date.parse(row.date)) ||
-      typeof row.value !== "number" || !Number.isFinite(row.value) ||
+      typeof row.value !== "number" || !Number.isFinite(row.value) || row.value < 0 ||
       typeof row.label !== "string" || typeof row.dateText !== "string" ||
       typeof row.source !== "string" || typeof row.url !== "string" ||
-      row.series !== "runrate") throw new TypeError(`Invalid point ${index}.`);
+      (row.series !== "runrate" && row.series !== "quarterly")) throw new TypeError(`Invalid point ${index}.`);
     return row as unknown as Point;
   });
+  for (const series of ["runrate", "quarterly"]) {
+    if (!points.some((point) => point.series === series)) throw new TypeError(`Missing ${series} data.`);
+  }
+  return points;
 }
 
 export default defineChartPage<Point[]>({
@@ -32,7 +36,8 @@ export default defineChartPage<Point[]>({
     label: "Anthropic annual revenue run rate",
     alt: "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.",
     render(data, { document, width, height, mode }) {
-      const points = data.map((d) => ({ ...d, dateValue: new Date(`${d.date}T00:00:00Z`) }));
+      const points = data.filter((d) => d.series === "runrate")
+        .map((d) => ({ ...d, dateValue: new Date(`${d.date}T00:00:00Z`) }));
       const compact = width < 560;
       const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
       const svg = Plot.plot({
@@ -90,6 +95,37 @@ export default defineChartPage<Point[]>({
       }
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.");
+      return svg;
+    },
+  }, {
+    id: "quarterly-revenue",
+    label: "Anthropic quarterly revenue",
+    alt: "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.",
+    render(data, { document, width, height, mode }) {
+      const points = data.filter((d) => d.series === "quarterly");
+      const compact = width < 560;
+      const svg = Plot.plot({
+        document, width, height: mode !== "preview" ? Math.max(height, 400) : height,
+        marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,
+        marginBottom: 62, marginLeft: compact ? 48 : 62,
+        x: { domain: points.map((d) => d.dateText), label: null, padding: 0.35 },
+        y: { domain: [0, 20], ticks: 5, label: "Quarterly revenue ($B)", grid: true },
+        marks: [
+          Plot.ruleY([0]),
+          Plot.barY(points, {
+            x: "dateText", y: "value", fill: "#2457a7",
+            tip: mode === "interactive",
+            title: (d: Point) => `${d.dateText}\n${d.label}\n${d.source}`,
+          }),
+          Plot.text(points, {
+            x: "dateText", y: "value", text: "label", dy: -13,
+            fill: "#183e78", fontWeight: 650,
+            fontSize: mode === "preview" ? 16 : compact ? 12 : 14,
+          }),
+        ],
+      }) as unknown as SVGSVGElement;
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.");
       return svg;
     },
   }],
