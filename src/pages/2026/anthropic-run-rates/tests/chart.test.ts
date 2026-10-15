@@ -7,7 +7,7 @@ import chart from "../chart.ts";
 
 const data = JSON.parse(await readFile(
   new URL("../data.json", import.meta.url), "utf8",
-)) as Array<Record<string, unknown>>;
+)) as { runRate: Array<Record<string, unknown>>; quarterlyRevenue: Array<Record<string, unknown>> };
 
 it("preserves static chart geometry and labels when enhanced", async () => {
   await assertStaticChartParity(new URL("../", import.meta.url), chart);
@@ -28,7 +28,7 @@ it("orders the simplified tabs and omits redundant y-axis titles", () => {
 });
 
 it("preserves all reported milestones and labels", () => {
-  assert.deepEqual(data.filter((row) => row.series === "runrate").map((row) => [row.date, row.value, row.label]), [
+  assert.deepEqual(data.runRate.map((row) => [row.date, row.value, row.label]), [
     ["2025-12-31", 9, "~$9B"], ["2026-02-12", 14, "$14B"],
     ["2026-02-28", 19, "~$19B"], ["2026-04-06", 30, ">$30B"],
     ["2026-05-10", 47, "~$47B"], ["2026-07-31", 65, ">$65B"],
@@ -54,7 +54,7 @@ it("uses quarter-end run-rate ticks through Q3 without extrapolating the data", 
 
 it("renders quarterly revenue separately from run-rate milestones at every size", () => {
   const quarterly = chart.charts.find((view) => view.id === "quarterly-revenue")!;
-  assert.deepEqual(data.filter((row) => row.series === "quarterly").map((row) => [row.date, row.value]), [
+  assert.deepEqual(data.quarterlyRevenue.map((row) => [row.date, row.value]), [
     ["2026-03-31", 4.8], ["2026-06-30", 11.5], ["2026-09-30", 16.8],
   ]);
   for (const width of [350, 720, 1200]) {
@@ -86,16 +86,39 @@ it("renders quarterly revenue separately from run-rate milestones at every size"
   assert.equal(runrate.querySelectorAll("circle").length, 6);
 });
 
-it("rejects invalid values, unknown measures, and missing series", () => {
-  const fixture = (series: string, value = 1) => ({
-    date: "2026-03-31", value, series, label: "$1B",
+it("stores each series in a separate list without redundant series fields", () => {
+  assert.deepEqual(Object.keys(data).sort(), ["quarterlyRevenue", "runRate"]);
+  for (const points of Object.values(data)) {
+    assert.ok(Array.isArray(points));
+    assert.ok(points.length > 0);
+    for (const point of points) assert.ok(!("series" in point));
+  }
+  assert.deepEqual(chart.parseData(data), data);
+});
+
+it("rejects malformed datasets, missing or empty series, and invalid points in either list", () => {
+  const fixture = (value = 1) => ({
+    date: "2026-03-31", value, label: "$1B",
     dateText: "Test quarter", source: "Test source", url: "https://example.com",
   });
-  assert.doesNotThrow(() => chart.parseData([fixture("runrate"), fixture("quarterly")]));
-  assert.throws(() => chart.parseData([fixture("runrate")]), /Missing quarterly/);
-  assert.throws(() => chart.parseData([fixture("quarterly")]), /Missing runrate/);
-  for (const invalid of [fixture("annual"), fixture("quarterly", -1), fixture("quarterly", NaN)]) {
-    assert.throws(() => chart.parseData([fixture("runrate"), invalid]), /Invalid point/);
+  const valid = { runRate: [fixture()], quarterlyRevenue: [fixture()] };
+  assert.doesNotThrow(() => chart.parseData(valid));
+  for (const invalid of [null, [], [fixture()], "revenue", 1]) {
+    assert.throws(() => chart.parseData(invalid), /Expected revenue data object/);
+  }
+  for (const series of ["runRate", "quarterlyRevenue"] as const) {
+    for (const invalid of [undefined, null, [], {}, "points"]) {
+      assert.throws(() => chart.parseData({ ...valid, [series]: invalid }), /Expected nonempty/);
+    }
+    for (const invalid of [
+      null, [], "point", fixture(-1), fixture(NaN), fixture(Infinity),
+      { ...fixture(), date: "invalid" }, { ...fixture(), value: "1" },
+      ...["date", "value", "label", "dateText", "source", "url"].map((key) => ({
+        ...fixture(), [key]: undefined,
+      })),
+    ]) {
+      assert.throws(() => chart.parseData({ ...valid, [series]: [invalid] }), /Invalid .* point 0/);
+    }
   }
 });
 

@@ -4,39 +4,47 @@ import { defineChartPage } from "../../../charts/definition.ts";
 interface Point {
   date: string;
   value: number;
-  series: "runrate" | "quarterly";
   label: string;
   dateText: string;
   source: string;
   url: string;
 }
 
-function parseData(value: unknown): Point[] {
-  if (!Array.isArray(value) || value.length === 0) throw new TypeError("Expected revenue data.");
-  const points = value.map((item, index) => {
-    if (!item || typeof item !== "object") throw new TypeError(`Invalid point ${index}.`);
+interface RevenueData {
+  runRate: Point[];
+  quarterlyRevenue: Point[];
+}
+
+function parseSeries(value: unknown, name: keyof RevenueData): Point[] {
+  if (!Array.isArray(value) || value.length === 0) throw new TypeError(`Expected nonempty ${name} data.`);
+  return value.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) throw new TypeError(`Invalid ${name} point ${index}.`);
     const row = item as Record<string, unknown>;
     if (typeof row.date !== "string" || !Number.isFinite(Date.parse(row.date)) ||
       typeof row.value !== "number" || !Number.isFinite(row.value) || row.value < 0 ||
       typeof row.label !== "string" || typeof row.dateText !== "string" ||
-      typeof row.source !== "string" || typeof row.url !== "string" ||
-      (row.series !== "runrate" && row.series !== "quarterly")) throw new TypeError(`Invalid point ${index}.`);
+      typeof row.source !== "string" || typeof row.url !== "string") throw new TypeError(`Invalid ${name} point ${index}.`);
     return row as unknown as Point;
   });
-  for (const series of ["runrate", "quarterly"]) {
-    if (!points.some((point) => point.series === series)) throw new TypeError(`Missing ${series} data.`);
-  }
-  return points;
 }
 
-export default defineChartPage<Point[]>({
+function parseData(value: unknown): RevenueData {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("Expected revenue data object.");
+  const data = value as Record<string, unknown>;
+  return {
+    runRate: parseSeries(data.runRate, "runRate"),
+    quarterlyRevenue: parseSeries(data.quarterlyRevenue, "quarterlyRevenue"),
+  };
+}
+
+export default defineChartPage<RevenueData>({
   parseData,
   charts: [{
     id: "quarterly-revenue",
     label: "Quarterly Revenue",
     alt: "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.",
     render(data, { document, width, height, mode }) {
-      const points = data.filter((d) => d.series === "quarterly");
+      const points = data.quarterlyRevenue;
       const compact = width < 560;
       const svg = Plot.plot({
         document, width, height: mode !== "preview" ? Math.max(height, 400) : height,
@@ -67,8 +75,7 @@ export default defineChartPage<Point[]>({
     label: "Run Rate",
     alt: "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.",
     render(data, { document, width, height, mode }) {
-      const points = data.filter((d) => d.series === "runrate")
-        .map((d) => ({ ...d, dateValue: new Date(`${d.date}T00:00:00Z`) }));
+      const points = data.runRate.map((d) => ({ ...d, dateValue: new Date(`${d.date}T00:00:00Z`) }));
       const compact = width < 560;
       const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
       const svg = Plot.plot({
