@@ -17,6 +17,10 @@ lists pages from all years. Year archive indexes are not generated automatically
 
 ## Editorial conventions
 
+Set an optional `updated: YYYY-MM-DD` front-matter field to append
+“· updated YYYY-MM-DD” to the homepage date row. Keep `date` as the original
+publication date; `updated` does not affect the homepage sort order.
+
 Avoid repeating information across page titles, subtitles, chart labels, and
 body text. Use chart-page `description` for metadata and homepage summaries,
 not an automatic visible subtitle. Body text should add context, sources,

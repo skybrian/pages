@@ -60,7 +60,7 @@ export default async function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/pages/!(**/tests/**)/data.json", {
     mode: "html-relative",
   });
-  eleventyConfig.addFilter("isoDate", (date) => date.toISOString().slice(0, 10));
+  eleventyConfig.addFilter("isoDate", (date) => new Date(date).toISOString().slice(0, 10));
 
   if (process.env.ELEVENTY_RUN_MODE === "serve") {
     const [{ tsImport }, { createMicrolighterAssetsMiddleware }, { createEditorAssetsMiddleware }] = await Promise.all([

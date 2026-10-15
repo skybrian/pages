@@ -6,7 +6,9 @@ title: skybrian’s pages
   {% for entry in collections.pages | reverse %}
   <li>
     <a href="{{ entry.url | escape }}">{{ entry.data.title | escape }}</a>
-    <time datetime="{{ entry.date | isoDate }}">{{ entry.date | isoDate }}</time>
+    <div class="page-dates">
+      <time datetime="{{ entry.date | isoDate }}">{{ entry.date | isoDate }}</time>{% if entry.data.updated %} · updated <time datetime="{{ entry.data.updated | isoDate }}">{{ entry.data.updated | isoDate }}</time>{% endif %}
+    </div>
     {% if entry.data.description %}<p>{{ entry.data.description | escape }}</p>{% endif %}
   </li>
   {% else %}

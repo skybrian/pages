@@ -16,7 +16,11 @@ it("renders chart-page metadata and Markdown notes without an automatic subtitle
   const root = await mkdtemp(path.join(os.tmpdir(), "pages-chart-template-"));
   const title = "Fixture title & heading";
   const description = "Fixture summary & metadata";
-  const fixtures = [["with-summary", description], ["without-summary", undefined]] as const;
+  const fixtures = [
+    ["with-summary", description, "2026-02-03"],
+    ["without-summary", undefined, undefined],
+    ["quoted-update", undefined, '"2026-02-04"'],
+  ] as const;
   try {
     await mkdir(path.join(root, "src/_includes"), { recursive: true });
     await mkdir(path.join(root, "src/pages"), { recursive: true });
@@ -35,14 +39,16 @@ it("renders chart-page metadata and Markdown notes without an automatic subtitle
         config.addGlobalData("previewMode", false);
         config.addFilter("initialCharts", (_, mode) =>
           mode === "tabs" ? '<div class="chart-tabs"></div>' : '<svg></svg>');
-        config.addFilter("isoDate", date => date.toISOString().slice(0, 10));
+        config.addFilter("isoDate", date => new Date(date).toISOString().slice(0, 10));
         return { dir: { input: "src", output: "output" }, markdownTemplateEngine: false };
       }
     `);
-    for (const [name, summary] of fixtures) {
+    for (const [name, summary, updated] of fixtures) {
+      const published = name === "quoted-update" ? "2025-12-31" : "2026-01-01";
       await writeFile(path.join(root, "src/pages", `${name}.md`), [
-        "---", "layout: chart-page.njk", `title: ${JSON.stringify(title)}`, "date: 2026-01-01",
+        "---", "layout: chart-page.njk", `title: ${JSON.stringify(title)}`, `date: ${published}`,
         ...(summary ? [`description: ${JSON.stringify(summary)}`] : []),
+        ...(updated ? [`updated: ${updated}`] : []),
         "---", "", "## Fixture notes", "", "An **editable** explanation.",
         "", "[Fixture source](https://example.com/source)", "",
       ].join("\n"));
@@ -52,7 +58,9 @@ it("renders chart-page metadata and Markdown notes without an automatic subtitle
     ], { cwd: root, env: { ...process.env, ELEVENTY_RUN_MODE: "build" } });
     const homepage = new JSDOM(await readFile(path.join(root, "output/index.html"), "utf8"));
     try {
-      for (const [name, summary] of fixtures) {
+      assert.equal(homepage.window.document.querySelector(".page-list li:last-child a")?.getAttribute("href"),
+        "/quoted-update/", "a newer update date must not move an older publication ahead of newer pages");
+      for (const [name, summary, updated] of fixtures) {
         const dom = new JSDOM(await readFile(path.join(root, "output", name, "index.html"), "utf8"));
         try {
           const document = dom.window.document;
@@ -66,6 +74,14 @@ it("renders chart-page metadata and Markdown notes without an automatic subtitle
           const entry = homepage.window.document.querySelector(`a[href="/${name}/"]`)!;
           assert.equal(entry.textContent, title);
           assert.equal(entry.parentElement?.querySelector("p")?.textContent, summary);
+          const dates = entry.parentElement!.querySelector(".page-dates")!;
+          const times = [...dates.querySelectorAll("time")];
+          const updatedDate = updated?.replaceAll('"', "");
+          const published = name === "quoted-update" ? "2025-12-31" : "2026-01-01";
+          assert.equal(dates.textContent?.trim(), `${published}${updatedDate ? ` · updated ${updatedDate}` : ""}`);
+          assert.deepEqual(times.map((time) => time.getAttribute("datetime")), [
+            published, ...(updatedDate ? [updatedDate] : []),
+          ]);
           assert.equal(card.querySelector("header")?.children.length, 1);
           assert.equal(card.querySelector("header")?.nextElementSibling?.className, "chart-tabs");
           assert.ok(!document.body.textContent?.includes(description));
