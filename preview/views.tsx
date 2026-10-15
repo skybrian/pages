@@ -125,10 +125,10 @@ export function SourceView({
           {editable && <button id="file-tab-editor" type="button" role="tab" aria-controls="file-panel-editor" aria-selected="false" tabIndex={-1}>Editor</button>}
           {isMarkdown && <button id="file-tab-changes" type="button" role="tab" aria-controls="file-panel-changes" aria-selected="false" tabIndex={-1}>Changes</button>}
         </div>
-        {isMarkdown && <section id="file-panel-rendered" role="tabpanel" aria-labelledby="file-tab-rendered" hidden={defaultTab !== "rendered"}>
+        {isMarkdown && <section id="file-panel-rendered" role="tabpanel" tabIndex={0} aria-labelledby="file-tab-rendered" hidden={defaultTab !== "rendered"}>
           <div id="file-rendered-content" dangerouslySetInnerHTML={{ __html: markdownHtml }} />
         </section>}
-        <section id="file-panel-source" role="tabpanel" aria-labelledby="file-tab-source" hidden={defaultTab !== "source"}>
+        <section id="file-panel-source" role="tabpanel" tabIndex={0} aria-labelledby="file-tab-source" hidden={defaultTab !== "source"}>
           <pre><code id="file-source-code" class={`language-${language}`}>{source}</code></pre>
         </section>
         {editable && <section id="file-panel-editor" role="tabpanel" aria-labelledby="file-tab-editor" hidden>
@@ -139,7 +139,7 @@ export function SourceView({
             <p id="editor-status" role="status" aria-live="polite"></p>
           </div>
         </section>}
-        {isMarkdown && <section id="file-panel-changes" role="tabpanel" aria-labelledby="file-tab-changes" hidden>
+        {isMarkdown && <section id="file-panel-changes" role="tabpanel" tabIndex={0} aria-labelledby="file-tab-changes" hidden>
           <p id="file-changes-status" role="status" aria-live="polite">Changes load when this tab is opened.</p>
           <pre id="file-changes-diff" hidden />
           <button id="revert-to-head" type="button" hidden>Revert to HEAD…</button>

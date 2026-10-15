@@ -213,6 +213,8 @@ describe("preview file tabs and autosaving editor", () => {
       revertBody = JSON.parse(String(init.body));
       return ok(snapshot(original, "hash-restored"));
     }) as typeof fetch);
+    let highlightRequests = 0;
+    window.document.addEventListener("syntax-highlight", () => { highlightRequests++; });
     click("changes");
     await wait(30);
     assert.match(window.document.querySelector("#file-changes-diff")!.textContent!, /-old/);
@@ -222,6 +224,7 @@ describe("preview file tabs and autosaving editor", () => {
     await wait(30);
     assert.deepEqual(revertBody, { action: "revert", hash });
     assert.equal(window.document.querySelector("#file-source-code")!.textContent, original);
+    assert.equal(highlightRequests, 2, "refreshed source requests syntax highlighting");
     window.close();
   });
 
@@ -235,6 +238,31 @@ describe("preview file tabs and autosaving editor", () => {
     await wait(30);
     window.document.querySelector<HTMLButtonElement>("#revert-to-head")!.click();
     await wait(30);
+    assert.equal(posts, 0);
+    window.close();
+  });
+
+  it("does not run a queued Changes revert after Editor becomes active", async () => {
+    let releaseEditorLoad!: (response: Response) => void;
+    const delayedEditorLoad = new Promise<Response>((resolve) => { releaseEditorLoad = resolve; });
+    let gets = 0;
+    let posts = 0;
+    const { window, click } = makeEditor((async (_url, init) => {
+      if (init?.method === "POST") {
+        posts++;
+        return ok(snapshot());
+      }
+      gets++;
+      return gets === 2 ? delayedEditorLoad : ok(snapshot());
+    }) as typeof fetch);
+    click("changes");
+    await wait(30);
+    click("editor");
+    await wait(30);
+    window.document.querySelector<HTMLButtonElement>("#revert-to-head")!.click();
+    releaseEditorLoad(ok(snapshot()));
+    await wait(30);
+    assert.equal(window.document.querySelector("#file-tab-editor")!.getAttribute("aria-selected"), "true");
     assert.equal(posts, 0);
     window.close();
   });

@@ -82,3 +82,27 @@ it("namespaces fragment links and keeps adversarial duplicate slugs unique", () 
     dom.window.close();
   }
 });
+
+it("rewrites local Markdown document fragments but leaves unrelated links alone", () => {
+  const dom = new JSDOM(`<main>${renderMarkdown([
+    "[Same directory](guide.md#foo)",
+    "[Parent directory](../guide.markdown#foo)",
+    "[External](https://example.com/guide.md#foo)",
+    "[Protocol relative](//example.com/guide.md#foo)",
+    "[Image resource](diagram.png#foo)",
+    "[JSON endpoint](guide.md?format=json#foo)",
+  ].join("\n\n"))}</main>`);
+  try {
+    const hrefs = [...dom.window.document.querySelectorAll("a")].map((link) => link.getAttribute("href"));
+    assert.deepEqual(hrefs, [
+      "guide.md#markdown-heading-foo",
+      "../guide.markdown#markdown-heading-foo",
+      "https://example.com/guide.md#foo",
+      "//example.com/guide.md#foo",
+      "diagram.png#foo",
+      "guide.md?format=json#foo",
+    ]);
+  } finally {
+    dom.window.close();
+  }
+});

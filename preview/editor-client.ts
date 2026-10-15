@@ -105,6 +105,7 @@ function applySnapshot(result: FileSnapshot): void {
         ? "File is not present in Git HEAD."
         : "Git HEAD is unavailable.");
   }
+  document.dispatchEvent(new Event("syntax-highlight"));
 }
 
 function createEditor(initial: string): void {
@@ -333,7 +334,7 @@ for (const tab of tabs) {
 }
 
 async function revertToHead(): Promise<void> {
-  if (!revertButton || revertButton.disabled
+  if (activeTab !== "changes" || !revertButton || revertButton.disabled
     || !window.confirm("Revert this file to HEAD? This does not change the Git index.")) return;
   revertButton.disabled = true;
   if (changesStatus) changesStatus.textContent = "Reverting…";
@@ -374,13 +375,11 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("beforeunload", (event) => {
   if (discardBeforeUnload) return;
   if (dirty() || inFlight) {
-    if (dirty() || inFlight) {
-      // If a request may have committed an earlier snapshot, the editor text
-      // and this baseline hash deliberately restore as stale rather than
-      // risk replacing that committed snapshot after reload.
-      try { sessionStorage.setItem(draftKey, JSON.stringify({ content: text(), baseHash: draftBaseHash })); }
-      catch { /* Storage may be disabled. */ }
-    }
+    // If a request may have committed an earlier snapshot, the editor text
+    // and this baseline hash deliberately restore as stale rather than
+    // risk replacing that committed snapshot after reload.
+    try { sessionStorage.setItem(draftKey, JSON.stringify({ content: text(), baseHash: draftBaseHash })); }
+    catch { /* Storage may be disabled. */ }
     event.preventDefault();
     event.returnValue = "";
   }

@@ -23,10 +23,19 @@ function headingSlug(text: string): string {
   return `markdown-heading-${slug || "section"}`;
 }
 
+function localMarkdownFragment(href: string): string | undefined {
+  const match = /^(?![a-z][a-z\d+.-]*:|\/)([^?#]+\.(?:md|markdown))#([^?#]+)$/iu.exec(href);
+  if (!match) return undefined;
+  try {
+    return `${match[1]}#${headingSlug(decodeURIComponent(match[2]!))}`;
+  } catch {
+    return undefined;
+  }
+}
+
 markdown.core.ruler.after("inline", "preview_heading_ids", (state) => {
   const used = new Set<string>();
   const firstIdBySlug = new Map<string, string>();
-  const headings: Array<{ token: Token; inline: Token; id: string; slug: string }> = [];
 
   // Allocate every ID before rewriting links so fragment links can target
   // namespaced headings and collisions never steal IDs from the file UI.
@@ -42,7 +51,6 @@ markdown.core.ruler.after("inline", "preview_heading_ids", (state) => {
     used.add(id);
     if (!firstIdBySlug.has(slug)) firstIdBySlug.set(slug, id);
     token.attrSet("id", id);
-    headings.push({ token, inline, id, slug });
   }
 
   for (const inline of state.tokens) {
@@ -50,7 +58,13 @@ markdown.core.ruler.after("inline", "preview_heading_ids", (state) => {
     for (const child of inline.children ?? []) {
       if (child.type !== "link_open") continue;
       const href = child.attrGet("href");
-      if (!href?.startsWith("#")) continue;
+      if (!href) continue;
+      const localTarget = localMarkdownFragment(href);
+      if (localTarget) {
+        child.attrSet("href", localTarget);
+        continue;
+      }
+      if (!href.startsWith("#")) continue;
       let fragment: string;
       try {
         fragment = decodeURIComponent(href.slice(1));
