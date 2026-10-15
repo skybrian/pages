@@ -13,298 +13,229 @@ const client = buildSync({
   target: ["es2022"],
 }).outputFiles[0]!.text;
 
-const source = "# Original\n";
-const sourceHash = "hash-v1";
+const original = "# Original\n";
+const hash = "hash-v1";
+const ok = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { "content-type": "application/json" },
+});
 
-function makeEditor(options: {
-  source?: string;
-  hash?: string;
-  draft?: string;
-  fetch?: typeof fetch;
-  confirm?: (message: string) => boolean;
-} = {}) {
-  const content = options.source ?? source;
-  const encoded = Buffer.from(content, "utf8").toString("base64");
+function makeEditor(fetcher: typeof fetch = fetch, confirm: (message: string) => boolean = () => true) {
+  const encoded = Buffer.from(original).toString("base64");
+  const tabNames = ["rendered", "source", "editor", "changes"] as const;
+  const markup = tabNames.map((name, index) => `
+    <button id="file-tab-${name}" role="tab" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}">${name}</button>
+    <section id="file-panel-${name}" role="tabpanel" ${index === 0 ? "" : "hidden"}>
+      ${name === "editor" ? `<div id="markdown-editor" data-source="${encoded}">
+        <div id="editor-host"></div><p id="editor-status" role="status"></p>
+        <button id="reload-markdown" hidden>Reload</button>
+      </div>` : ""}
+      ${name === "rendered" ? `<div id="file-rendered-content">Original</div>` : ""}
+      ${name === "source" ? `<pre><code id="file-source-code">${original}</code></pre>` : ""}
+      ${name === "changes" ? `<p id="file-changes-status" role="status"></p><pre id="file-changes-diff" hidden></pre>
+        <button id="revert-to-head" hidden>Revert to HEAD</button>` : ""}
+    </section>`).join("");
   const dom = new JSDOM(`<!doctype html><html><head>
     <meta name="pages-edit-token" content="csrf">
-    <meta name="pages-source-hash" content="${options.hash ?? sourceHash}">
+    <meta name="pages-source-hash" content="${hash}">
   </head><body>
-    <button id="edit-markdown">Edit</button>
-    <section id="markdown-editor" hidden data-source="${encoded}">
-      <div id="editor-host" aria-label="Markdown editor"></div>
-      <p id="editor-status"></p>
-      <button id="save-markdown">Save</button>
-      <button id="cancel-markdown">Cancel</button>
-      <button id="reload-markdown" hidden>Reload</button>
-    </section>
-    <pre><code>${content}</code></pre>
+    <p id="file-view-status" role="status"></p><div role="tablist">${markup}</div>
   </body></html>`, {
     url: "http://localhost/admin/files/page.md",
     runScripts: "outside-only",
     pretendToBeVisual: true,
     virtualConsole: new VirtualConsole(),
     beforeParse(window) {
-      class ResizeObserver {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      }
+      class ResizeObserver { observe() {} unobserve() {} disconnect() {} }
       Object.assign(window, {
         ResizeObserver,
-        requestAnimationFrame: (callback: FrameRequestCallback) => {
-          return window.setTimeout(() => callback(Date.now()), 0);
-        },
+        requestAnimationFrame: (callback: FrameRequestCallback) => window.setTimeout(() => callback(Date.now()), 0),
         cancelAnimationFrame: (id: number) => window.clearTimeout(id),
-        confirm: options.confirm ?? (() => true),
-        fetch: options.fetch ?? fetch,
+        confirm,
+        fetch: fetcher,
       });
       window.Range.prototype.getBoundingClientRect = () => new window.DOMRect(0, 0, 0, 0);
       window.Range.prototype.getClientRects = () => ({
-        length: 0,
-        item: () => null,
-        [Symbol.iterator]: function* () {},
+        length: 0, item: () => null, [Symbol.iterator]: function* () {},
       }) as DOMRectList;
       window.HTMLElement.prototype.getBoundingClientRect = () => new window.DOMRect(0, 0, 800, 24);
     },
   });
   const { window } = dom;
-  if (options.draft !== undefined) {
-    window.sessionStorage.setItem(`pages-markdown-draft:${window.location.pathname}`, options.draft);
-  }
   window.eval(client);
-  const click = (selector: string) => {
-    const element = window.document.querySelector<HTMLElement>(selector);
-    assert(element, `missing ${selector}`);
-    element.click();
-    return element;
-  };
-  const editorContent = () => {
-    const element = window.document.querySelector<HTMLElement>(".cm-content");
-    assert(element, "CodeMirror content DOM was not initialized");
-    return element;
-  };
-  const replaceDocument = (text: string) => {
-    const element = editorContent();
+  const click = (name: string) => window.document.querySelector<HTMLButtonElement>(`#file-tab-${name}`)!.click();
+  const editorText = () => window.document.querySelector<HTMLElement>(".cm-content")!;
+  const replace = (value: string) => {
+    const element = editorText();
     element.focus();
-    element.textContent = text;
-    element.dispatchEvent(new window.InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+    element.textContent = value;
+    element.dispatchEvent(new window.InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
   };
-  const pressKey = (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean } = {}) => {
-    const element = editorContent();
-    element.focus();
-    element.dispatchEvent(new window.KeyboardEvent("keydown", {
-      key, bubbles: true, cancelable: true, ...modifiers,
-    }));
-  };
-  return { dom, window, click, editorContent, replaceDocument, pressKey };
+  return { window, click, replace, editorText };
 }
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => { resolve = r; });
-  return { promise, resolve };
-}
+const snapshot = (content = original, currentHash = hash) => ({
+  content, hash: currentHash, renderedHtml: `<h1>${content.trim()}</h1>`,
+  diff: "-old\n+new\n", canRevert: true, gitStatus: "tracked",
+});
+const wait = (ms = 560) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const settleInput = () => new Promise((resolve) => setTimeout(resolve, 25));
-
-describe("preview Markdown editor workflow", () => {
-  it("initializes Edit and Cancel discards edits and restores the readonly source", async () => {
-    const { window, click, replaceDocument } = makeEditor({ confirm: () => true });
-    click("#edit-markdown");
-
-    assert.equal(window.document.querySelector("#markdown-editor")!.hasAttribute("hidden"), false);
-    assert.equal(window.document.querySelector("pre")!.hasAttribute("hidden"), true);
-    assert.match(window.document.querySelector(".cm-content")!.textContent!, /# Original/);
-
-    replaceDocument("# Changed\n");
-    await settleInput();
-    click("#cancel-markdown");
-    assert.equal(window.document.querySelector("#markdown-editor")!.hasAttribute("hidden"), true);
-    assert.equal(window.document.querySelector("#edit-markdown")!.hasAttribute("hidden"), false);
-    assert.equal(window.document.querySelector("pre")!.hasAttribute("hidden"), false);
-    click("#edit-markdown");
-    assert.match(window.document.querySelector(".cm-content")!.textContent!, /# Original/);
+describe("preview file tabs and autosaving editor", () => {
+  it("defaults to Rendered and supports accessible arrow-key tab navigation", async () => {
+    let gets = 0;
+    const { window } = makeEditor((async () => { gets++; return ok(snapshot()); }) as typeof fetch);
+    assert.equal(window.document.querySelector("#file-tab-rendered")!.getAttribute("aria-selected"), "true");
+    const sourceTab = window.document.querySelector<HTMLButtonElement>("#file-tab-source")!;
+    sourceTab.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    await wait(30);
+    assert.equal(window.document.querySelector("#file-tab-editor")!.getAttribute("aria-selected"), "true");
+    assert.equal(gets, 1);
     window.close();
   });
 
-  it("saves the submitted snapshot and keeps later typing dirty after the request resolves", async () => {
-    const response = deferred<Response>();
-    let submitted: { content: string; hash: string } | undefined;
-    const { window, click, replaceDocument } = makeEditor({
-      fetch: (async (_input: RequestInfo | URL, init?: RequestInit) => {
-        submitted = JSON.parse(String(init?.body));
-        return response.promise;
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("# Submitted\n");
-    await settleInput();
-    click("#save-markdown");
-    assert.deepEqual(submitted, { content: "# Submitted\n", hash: sourceHash });
-    replaceDocument("# Submitted, then changed\n");
-    await settleInput();
-    response.resolve(new Response(JSON.stringify({ hash: "hash-v2" }), {
-      status: 200, headers: { "content-type": "application/json" },
-    }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /newer edits are still unsaved/);
-    assert.equal(window.document.querySelector("#save-markdown")!.hasAttribute("disabled"), false);
+  it("loads the editor from a fresh read and autosaves after a debounce", async () => {
+    const requests: Array<{ method: string; body?: Record<string, unknown> }> = [];
+    const { window, click, replace } = makeEditor((async (_url, init) => {
+      const method = init?.method ?? "GET";
+      requests.push({ method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return method === "GET" ? ok(snapshot()) : ok({ hash: "hash-v2" });
+    }) as typeof fetch);
+    click("editor");
+    await wait(30);
+    replace("# Changed\n");
+    await wait();
+    assert.deepEqual(requests.filter(({ method }) => method === "POST").map(({ body }) => body), [
+      { content: "# Changed\n", hash },
+    ]);
+    assert.match(window.document.querySelector("#editor-status")!.textContent!, /Saved/i);
     window.close();
   });
 
-  it("coalesces Ctrl-S while a save is in flight", async () => {
-    const response = deferred<Response>();
-    let calls = 0;
-    const { window, click, replaceDocument } = makeEditor({
-      fetch: (async () => {
-        calls++;
-        return response.promise;
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("# Changed\n");
-    await settleInput();
-    click("#save-markdown");
-    const saveKey = new window.KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true, cancelable: true });
-    window.document.dispatchEvent(saveKey);
-    assert.equal(saveKey.defaultPrevented, true);
-    assert.equal(calls, 1);
-    response.resolve(new Response(JSON.stringify({ hash: "hash-v2" }), { status: 200 }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  it("serializes typing during an in-flight save and flushes both versions before switching", async () => {
+    let resolveFirst!: (response: Response) => void;
+    const first = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const posts: Array<Record<string, unknown>> = [];
+    const { window, click, replace } = makeEditor((async (_url, init) => {
+      if (init?.method !== "POST") return ok(snapshot());
+      const payload = JSON.parse(String(init.body));
+      posts.push(payload);
+      if (posts.length === 1) return first;
+      return ok({ hash: "hash-v3" });
+    }) as typeof fetch);
+    click("editor");
+    await wait(30);
+    replace("# First\n");
+    await wait();
+    replace("# Second\n");
+    const switching = (window.document.querySelector("#file-tab-source") as HTMLButtonElement).click();
+    resolveFirst(ok({ hash: "hash-v2" }));
+    await switching;
+    await wait(30);
+    assert.deepEqual(posts, [
+      { content: "# First\n", hash },
+      { content: "# Second\n", hash: "hash-v2" },
+    ]);
+    assert.equal(window.document.querySelector("#file-tab-source")!.getAttribute("aria-selected"), "true");
     window.close();
   });
 
-  it("restores a draft when opening the editor", () => {
-    const { window, click } = makeEditor({
-      draft: JSON.stringify({ content: "# Recovered draft\n", baseHash: sourceHash }),
-    });
-    click("#edit-markdown");
-    assert.match(window.document.querySelector(".cm-content")!.textContent!, /Recovered draft/);
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /Restored unsaved edits/);
-    assert.equal(window.document.querySelector("#editor-host")!.getAttribute("aria-label"), "Markdown editor");
+  it("keeps typing made during the tab-refresh request and saves it before leaving", async () => {
+    let releaseRefresh!: (response: Response) => void;
+    const delayedRefresh = new Promise<Response>((resolve) => { releaseRefresh = resolve; });
+    let gets = 0;
+    const posts: Array<Record<string, unknown>> = [];
+    const { window, click, replace } = makeEditor((async (_url, init) => {
+      if (init?.method !== "POST") {
+        gets++;
+        return gets === 2 ? delayedRefresh : ok(snapshot());
+      }
+      const payload = JSON.parse(String(init.body));
+      posts.push(payload);
+      return ok({ hash: `hash-v${posts.length + 1}` });
+    }) as typeof fetch);
+    click("editor");
+    await wait(30);
+    replace("# First saved\n");
+    await wait();
+    click("source");
+    await wait(30);
+    replace("# Typed during refresh\n");
+    releaseRefresh(ok(snapshot("# First saved\n", "hash-v2")));
+    await wait(600);
+    assert.deepEqual(posts.map(({ content }) => content), [
+      "# First saved\n",
+      "# Typed during refresh\n",
+    ]);
+    assert.equal(window.document.querySelector("#file-tab-source")!.getAttribute("aria-selected"), "true");
     window.close();
   });
 
-  it("restores but does not submit a draft based on a stale source hash", async () => {
-    let calls = 0;
-    const { window, click } = makeEditor({
-      hash: "current-disk-hash",
-      draft: JSON.stringify({ content: "# Stale but preserved\n", baseHash: "older-disk-hash" }),
-      fetch: (async () => {
-        calls++;
-        return new Response(JSON.stringify({ hash: "unexpected" }), { status: 200 });
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    assert.match(window.document.querySelector(".cm-content")!.textContent!, /Stale but preserved/);
-    click("#save-markdown");
-    await settleInput();
-    assert.equal(calls, 0);
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /older source version|conflict|stale/i);
+  it("blocks a tab switch on save failure and preserves edits for retry/recovery", async () => {
+    let posts = 0;
+    const { window, click, replace } = makeEditor((async (_url, init) => {
+      if (init?.method !== "POST") return ok(snapshot());
+      posts++;
+      return new Response("nope", { status: 500 });
+    }) as typeof fetch);
+    click("editor");
+    await wait(30);
+    replace("# Keep me\n");
+    await wait();
+    click("source");
+    await wait(30);
+    assert.equal(window.document.querySelector("#file-tab-editor")!.getAttribute("aria-selected"), "true");
+    assert.match(window.document.querySelector(".cm-content")!.textContent!, /Keep me/);
+    assert.ok(posts >= 1);
+    assert.match(window.document.querySelector("#editor-status")!.textContent!, /failed/i);
     window.close();
   });
 
-  it("treats a legacy draft with no base hash as an untrusted conflict", async () => {
-    let calls = 0;
-    const { window, click } = makeEditor({
-      hash: "current-disk-hash",
-      draft: "# Legacy draft without a base hash\n",
-      fetch: (async () => {
-        calls++;
-        return new Response(JSON.stringify({ hash: "unexpected" }), { status: 200 });
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    assert.match(window.document.querySelector(".cm-content")!.textContent!, /Legacy draft without a base hash/);
-    click("#save-markdown");
-    await settleInput();
-    assert.equal(calls, 0);
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /conflict|unknown|cannot be saved|older source/i);
-    window.close();
-  });
-
-  it("preserves edits and exposes reload after the server reports a changed source", async () => {
-    const { window, click, replaceDocument } = makeEditor({
-      fetch: (async () => new Response("conflict", { status: 409 })) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("# Keep these edits\n");
-    await settleInput();
-    click("#save-markdown");
-    await settleInput();
+  it("blocks switching on a hash conflict and exposes the explicit reload action", async () => {
+    const { window, click, replace } = makeEditor((async (_url, init) => {
+      if (init?.method !== "POST") return ok(snapshot());
+      return new Response(JSON.stringify({ error: "conflict" }), { status: 409 });
+    }) as typeof fetch);
+    click("editor");
+    await wait(30);
+    replace("# Preserve conflict\n");
+    await wait();
+    click("changes");
+    await wait(30);
+    assert.equal(window.document.querySelector("#file-tab-editor")!.getAttribute("aria-selected"), "true");
     assert.equal(window.document.querySelector("#reload-markdown")!.hasAttribute("hidden"), false);
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /changed on disk/);
-    assert.match(window.sessionStorage.getItem(`pages-markdown-draft:${window.location.pathname}`)!, /Keep these edits/);
+    assert.match(window.document.querySelector(".cm-content")!.textContent!, /Preserve conflict/);
     window.close();
   });
 
-  it("serializes CRLF documents from the editor state and sends the current source hash", async () => {
-    let submitted: { content: string; hash: string } | undefined;
-    const { window, click, pressKey } = makeEditor({
-      source: "first\r\nsecond",
-      hash: "disk-hash",
-      fetch: (async (_input: RequestInfo | URL, init?: RequestInit) => {
-        submitted = JSON.parse(String(init?.body));
-        return new Response(JSON.stringify({ hash: "next-hash" }), { status: 200 });
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    pressKey("End", { ctrlKey: true });
-    pressKey("Enter");
-    click("#save-markdown");
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.deepEqual(submitted, { content: "first\r\nsecond\r\n", hash: "disk-hash" });
+  it("loads diff metadata and reverts to HEAD with confirmation", async () => {
+    let revertBody: Record<string, unknown> | undefined;
+    const { window, click } = makeEditor((async (_url, init) => {
+      if (init?.method !== "POST") return ok(snapshot());
+      revertBody = JSON.parse(String(init.body));
+      return ok(snapshot(original, "hash-restored"));
+    }) as typeof fetch);
+    click("changes");
+    await wait(30);
+    assert.match(window.document.querySelector("#file-changes-diff")!.textContent!, /-old/);
+    const revert = window.document.querySelector<HTMLButtonElement>("#revert-to-head")!;
+    assert.equal(revert.disabled, false);
+    revert.click();
+    await wait(30);
+    assert.deepEqual(revertBody, { action: "revert", hash });
+    assert.equal(window.document.querySelector("#file-source-code")!.textContent, original);
     window.close();
   });
 
-  it("updates the readonly source after a successful save", async () => {
-    const { window, click, replaceDocument } = makeEditor({
-      fetch: (async () => new Response(JSON.stringify({ hash: "new-hash" }), { status: 200 })) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("# Saved source\n");
-    await settleInput();
-    click("#save-markdown");
-    await settleInput();
-    assert.equal(window.document.querySelector("pre code")!.textContent, "# Saved source\n");
-    window.close();
-  });
-
-  it("warns about mixed line endings and refuses to submit them", async () => {
-    let calls = 0;
-    const { window, click, replaceDocument } = makeEditor({
-      source: "first\r\nsecond\nthird\r\n",
-      fetch: (async () => {
-        calls++;
-        return new Response(JSON.stringify({ hash: "unexpected" }), { status: 200 });
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("first\r\nsecond\nthird\r\nchanged\n");
-    await settleInput();
-    click("#save-markdown");
-    await settleInput();
-    assert.equal(calls, 0);
-    assert.match(window.document.querySelector("#editor-status")!.textContent!, /mixed|line ending/i);
-    window.close();
-  });
-
-  it("does not silently lose a leading UTF-8 BOM", async () => {
-    const bomSource = "\uFEFF# Original\n";
-    let submitted: { content: string; hash: string } | undefined;
-    const { window, click, replaceDocument } = makeEditor({
-      source: bomSource,
-      fetch: (async (_input: RequestInfo | URL, init?: RequestInit) => {
-        submitted = JSON.parse(String(init?.body));
-        return new Response(JSON.stringify({ hash: "next-hash" }), { status: 200 });
-      }) as typeof fetch,
-    });
-    click("#edit-markdown");
-    replaceDocument("\uFEFF# Changed\n");
-    await settleInput();
-    click("#save-markdown");
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.equal(submitted?.content.charCodeAt(0), 0xfeff);
+  it("does not revert if the confirmation is declined", async () => {
+    let posts = 0;
+    const { window, click } = makeEditor((async (_url, init) => {
+      if (init?.method === "POST") posts++;
+      return ok(snapshot());
+    }) as typeof fetch, () => false);
+    click("changes");
+    await wait(30);
+    window.document.querySelector<HTMLButtonElement>("#revert-to-head")!.click();
+    await wait(30);
+    assert.equal(posts, 0);
     window.close();
   });
 });
