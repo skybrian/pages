@@ -24,35 +24,68 @@ the preview server, remove that page's generated output from `_preview/`, and
 restart the server. Agent guidance files under `src/pages/` are excluded from
 page generation.
 
+## Markdown views
+
+Existing `.md` and `.markdown` files have four tabs:
+
+- **Rendered** (the default): documentation-style Markdown, including lists,
+  tables, and fenced code blocks. Front matter is omitted and raw HTML is
+  displayed as text rather than executed. This is a document rendering, not
+  an Eleventy build; use the ribbon to open an actual generated page.
+- **Source**: the saved Markdown as read-only, syntax-highlighted text.
+- **Editor**: a locally bundled CodeMirror 6 editor with Markdown highlighting,
+  line wrapping, undo/redo, and search. It reads the file from disk on entry.
+- **Changes**: a unified diff of the saved working-tree file against Git `HEAD`,
+  combining staged and unstaged changes. Untracked files appear as additions;
+  Git failures and missing commits are reported without disabling editing.
+
+Relative documentation links resolve within the file browser. Non-Markdown
+files keep their existing read-only viewer. Tab navigation supports arrow keys,
+Home, and End.
+
 ## Markdown editor
 
-Existing `.md` and `.markdown` files have an **Edit** button. The preview-only
-CodeMirror 6 editor is bundled locally with esbuild and provides Markdown
-highlighting, line wrapping, undo/redo, and search. Saving is always explicit
-(Save or Ctrl/Cmd-S); there is no autosave or rendered Markdown preview in the
-editor. UTF-8 BOMs and uniform LF/CRLF line endings are retained. Files with
-mixed line endings cannot be saved here; normalize them externally first.
-Saves are limited to 1 MiB, require the page's same-origin CSRF token,
-and use a content hash to reject stale edits instead of overwriting concurrent
-changes. Saves in the preview process are serialized per canonical file path,
-and the current hash is checked again immediately before replacement.
-Replacement is atomic. This prevents concurrent editor saves in this server
-from both succeeding and narrows races with external writers; a separate
+Edits save automatically after a short typing pause. The status distinguishes
+pending changes, saving, successful saves, and failures. Ctrl/Cmd-S can request
+an immediate save; search uses Ctrl/Cmd-F. Switching tabs finishes pending
+saves before releasing the editor, so Source, Rendered, and Changes reflect the
+saved text. Returning to Editor creates a fresh editor from disk, with a new
+undo history.
+
+A failed save or external-edit conflict keeps the editor and its text intact
+and blocks switching away. Reloading from disk requires confirmation before
+replacing unsaved text. Navigation or a browser reload with unsaved edits warns
+rather than silently losing the text. A session-only recovery draft also
+preserves pending or failed edits across an accepted reload. If its original
+file version no longer matches disk, it is preserved but cannot be autosaved
+over the newer version.
+
+UTF-8 BOMs and uniform LF/CRLF line endings are retained. Files with mixed line
+endings cannot be saved here; normalize them externally first. Saves are limited
+to 1 MiB, require the page's same-origin CSRF token, and use a content hash to
+reject stale edits rather than overwriting concurrent changes. Saves and
+reverts in the preview process are serialized per canonical file path; the
+current hash is checked again immediately before atomic replacement. A separate
 process can still write in the small interval between the final hash check and
 filesystem rename because ordinary path-based filesystem APIs do not provide
-a cross-process compare-and-swap. If a dev-server reload or navigation is
-attempted with edits, the browser warns; the tab also keeps a session-only draft
-so an accepted live reload can restore the unsaved text. The draft records the
-source hash it was based on; drafts from stale or unknown versions are
-preserved but cannot be saved until explicitly reloaded. Cancel discards it.
-If another process changes the file, the editor preserves the draft and offers
-an explicit reload-from-disk action.
+a cross-process compare-and-swap.
 
-For a quick workflow check, run `npm run dev`, open a Markdown source page from
-`/admin/files/`, enter Edit, make a change, and use Save. Verify a second edit
-followed by Cancel restores the saved source, and that an external edit causes
-a conflict rather than silent replacement. The ordinary file view and the
-generated page's Source ribbon remain available.
+### Reverting changes
+
+The **Changes** tab offers **Revert to HEAD…** when a committed version exists
+and differs from the saved file. After confirmation, this replaces only that
+file's working-tree contents with its version in the current `HEAD`. It does
+not modify Git's index or create a commit. Staged changes therefore remain
+staged, even when the working-tree file now matches `HEAD`. Files absent from
+`HEAD` have no revert action. A stale file hash rejects the revert instead of
+overwriting a newer external change.
+
+For a workflow check, open a Markdown file under `/admin/files/docs/`, inspect
+all four tabs, edit it, and switch to Rendered. Verify the saved result appears
+in Source and Changes. Make an external edit while the editor is open and
+verify that autosave reports a conflict without replacing either version.
+Finally, use a disposable tracked file to verify Revert to HEAD restores its
+committed contents without changing the staging area.
 
 ## Preview-only pages
 

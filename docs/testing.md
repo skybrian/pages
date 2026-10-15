@@ -57,7 +57,7 @@ changing its rendering. Review the rendered page and chart/image output as well.
 ## Preview editor workflow
 
 See the [preview server guide](preview-server.md#markdown-editor) for the manual
-Save, Cancel, and external-edit conflict check.
+autosave, tab-switching, external-edit conflict, and Git revert checks.
 
 ## Optional pre-commit hook
 
