@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer, request } from "node:http";
+import { execFileSync } from "node:child_process";
 import { after, before, describe, it } from "node:test";
 import { createFileBrowserMiddleware, languageForFilename } from "./files.ts";
 import { createMicrolighterAssetsMiddleware } from "./microlighter-assets.ts";
@@ -18,6 +19,15 @@ describe("preview file browser", () => {
   let fileMiddleware: ReturnType<typeof createFileBrowserMiddleware>;
   let previewUrls: ReturnType<typeof createPreviewUrlLookup>;
   let assetsMiddleware: ReturnType<typeof createMicrolighterAssetsMiddleware>;
+
+  function fixtureGit(args: string[]): Buffer {
+    assert.ok(root, "fixture root must be initialized before Git commands");
+    return execFileSync("git", ["-C", root, ...args], { cwd: root, encoding: "buffer" });
+  }
+
+  function fixtureGitText(args: string[]): string {
+    return fixtureGit(args).toString("utf8");
+  }
 
   function rawGet(requestPath: string, method = "GET"): Promise<{ status: number; headers: Headers; body: string }> {
     return new Promise((resolve, reject) => {
@@ -57,6 +67,7 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "src", "pages", "published.md"), "# Published page");
     await writeFile(path.join(root, "src", "pages", "second.markdown"), "# Second page");
     await writeFile(path.join(root, "concurrent.md"), "base");
+    await writeFile(path.join(root, "revert.md"), "# HEAD\n");
     await writeFile(path.join(root, "bom.markdown"), Buffer.from("\uFEFF# BOM file\r\n", "utf8"));
     await writeFile(path.join(root, "src", "pages", "chart.ts"), "export const chart = true;");
     await writeFile(path.join(root, "unknown.xyz"), "<not markup>");
@@ -72,6 +83,15 @@ describe("preview file browser", () => {
     await writeFile(path.join(root, "owner's file.txt"), "apostrophe");
     await writeFile(path.join(root, "hostile <style><script>.txt"), "before </script><script>alert('source')</script> after </style>");
     await writeFile(path.join(root, "crumb & <folder>", "file.txt"), "safe");
+    fixtureGit(["init", "-q"]);
+    const fixtureRepo = path.resolve(fixtureGitText(["rev-parse", "--show-toplevel"]).trim());
+    assert.equal(fixtureRepo, path.resolve(root), "Git fixture commands must never target the parent repository");
+    fixtureGit(["config", "user.name", "Preview Test"]);
+    fixtureGit(["config", "user.email", "preview-test@example.invalid"]);
+    assert.equal(await readFile(path.join(root, "revert.md"), "utf8"), "# HEAD\n");
+    fixtureGit(["add", "-f", "--", "revert.md"]);
+    fixtureGit(["-c", "core.hooksPath=/dev/null", "commit", "-qm", "base"]);
+    assert.equal(fixtureGitText(["rev-parse", "--verify", "HEAD"]).trim().length, 40);
     await writeFile(path.join(outside, "secret"), "secret");
     await writeFile(path.join(outside, "secret.png"), png);
     await symlink(outside, path.join(root, "escape"));
@@ -380,6 +400,74 @@ describe("preview file browser", () => {
     const encoded = html.match(/id="markdown-editor" data-source="([^"]+)"/)?.[1];
     assert.ok(encoded);
     assert.deepEqual(Buffer.from(encoded!, "base64"), original);
+  });
+
+  it("returns saved state and reverts to HEAD without changing the index", async () => {
+    const pathname = "/admin/files/revert.md";
+    const source = await fetch(`${origin}${pathname}`);
+    const page = await source.text();
+    const token = page.match(/name="pages-edit-token" content="([a-f0-9]{64})"/)?.[1];
+    const cookie = source.headers.get("set-cookie")?.match(/pages_edit_csrf=([a-f0-9]{64})/)?.[1];
+    assert.ok(token && cookie);
+    const headers = { "content-type": "application/json", cookie: `pages_edit_csrf=${cookie}`, "x-pages-csrf-token": token! };
+    await writeFile(path.join(root, "revert.md"), "# Working\n");
+    const json = await (await fetch(`${origin}${pathname}?format=json`)).json() as Record<string, unknown>;
+    assert.equal(json.content, "# Working\n");
+    assert.equal(json.gitStatus, "tracked", String(json.message));
+    assert.equal(json.canRevert, true);
+    assert.match(String(json.diff), /HEAD/);
+    assert.equal(typeof json.renderedHtml, "string");
+    const unauthorized = await fetch(`${origin}${pathname}`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "revert", hash: json.hash }),
+    });
+    assert.equal(unauthorized.status, 403);
+    const conflict = await fetch(`${origin}${pathname}`, {
+      method: "POST", headers,
+      body: JSON.stringify({ action: "revert", hash: "0".repeat(64) }),
+    });
+    assert.equal(conflict.status, 409);
+    assert.equal(await readFile(path.join(root, "revert.md"), "utf8"), "# Working\n");
+    fixtureGit(["add", "-f", "--", "revert.md"]);
+    const staged = fixtureGitText(["show", ":revert.md"]);
+    const response = await fetch(`${origin}${pathname}`, {
+      method: "POST", headers, body: JSON.stringify({ action: "revert", hash: json.hash }),
+    });
+    assert.equal(response.status, 200);
+    const reverted = await response.json() as Record<string, unknown>;
+    assert.equal(reverted.content, "# HEAD\n");
+    assert.equal(reverted.canRevert, false);
+    assert.equal(await readFile(path.join(root, "revert.md"), "utf8"), "# HEAD\n");
+    assert.equal(fixtureGitText(["show", ":revert.md"]), staged,
+      "revert does not modify the staged index");
+    assert.equal((await fetch(`${origin}${pathname}?format=json`)).status, 200);
+    await unlink(path.join(root, "revert.md"));
+    await symlink(path.join(outside, "secret"), path.join(root, "revert.md"));
+    const symlinkRevert = await fetch(`${origin}${pathname}`, {
+      method: "POST", headers,
+      body: JSON.stringify({ action: "revert", hash: reverted.hash }),
+    });
+    assert.equal(symlinkRevert.status, 404);
+    assert.equal(await readFile(path.join(outside, "secret"), "utf8"), "secret");
+  });
+
+  it("reports untracked Markdown and rejects reverting it", async () => {
+    const pathname = "/admin/files/concurrent.md";
+    const source = await fetch(`${origin}${pathname}`);
+    const page = await source.text();
+    const token = page.match(/name="pages-edit-token" content="([a-f0-9]{64})"/)?.[1];
+    const cookie = source.headers.get("set-cookie")?.match(/pages_edit_csrf=([a-f0-9]{64})/)?.[1];
+    const state = await (await fetch(`${origin}${pathname}?format=json`)).json() as Record<string, unknown>;
+    assert.equal(state.gitStatus, "untracked");
+    assert.equal(state.canRevert, false);
+    const response = await fetch(`${origin}${pathname}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `pages_edit_csrf=${cookie}`,
+        "x-pages-csrf-token": token! },
+      body: JSON.stringify({ action: "revert", hash: state.hash }),
+    });
+    assert.equal(response.status, 409);
+    assert.match((await response.json() as { message: string }).message, /Untracked/);
   });
 
   it("returns 404 for missing paths and falls through outside the route boundary", async () => {

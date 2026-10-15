@@ -3,6 +3,8 @@ import { lstat, open, readdir, realpath, rename, unlink } from "node:fs/promises
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { renderMarkdown } from "./markdown.ts";
+import { diffHeadToWorking, readHeadFile } from "./git-file-state.ts";
 import { renderDirectoryListing, renderErrorPage, renderSourceView, type Breadcrumb, type DirectoryEntry } from "./views.tsx";
 
 const ROUTE = "/admin/files";
@@ -166,6 +168,45 @@ function htmlResponse(res: ServerResponse, status: number, body: string, head: b
   else res.end(body);
 }
 
+function jsonResponse(res: ServerResponse, status: number, body: unknown): void {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.end(JSON.stringify(body));
+}
+
+async function sendFileState(res: ServerResponse, root: string, relative: string, content: string, hash: string) {
+  const head = await readHeadFile(root, relative);
+  let diff = "";
+  let canRevert = false;
+  let gitStatus: string;
+  let message: string | undefined;
+  if (head.kind === "tracked") {
+    gitStatus = "tracked";
+    try {
+      diff = await diffHeadToWorking(root, relative, head.content, Buffer.from(content, "utf8"));
+      canRevert = diff.length > 0;
+    } catch {
+      gitStatus = "unavailable";
+      message = "Could not compute the Git diff";
+    }
+  } else if (head.kind === "untracked") {
+    gitStatus = "untracked";
+    try { diff = await diffHeadToWorking(root, relative, Buffer.alloc(0), Buffer.from(content, "utf8")); }
+    catch { message = "Could not compute the Git diff"; }
+    message ??= "File is not present in Git HEAD";
+  } else {
+    gitStatus = "unavailable";
+    message = head.reason === "too-large" ? "HEAD file exceeds the preview size limit" : "Git HEAD is unavailable";
+  }
+  const body: Record<string, unknown> = {
+    content, hash, diff, canRevert, gitStatus, renderedHtml: renderMarkdown(content),
+  };
+  if (message) body.message = message;
+  return jsonResponse(res, 200, body);
+}
+
 function breadcrumbs(segments: string[]): Breadcrumb[] {
   return [
     { label: "root", href: `${ROUTE}/` },
@@ -261,23 +302,94 @@ export function createFileBrowserMiddleware(
           }
           chunks.push(buffer);
         }
-        let payload: { content?: unknown; hash?: unknown };
+        let payload: { action?: unknown; content?: unknown; hash?: unknown };
         try { payload = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
         catch { return htmlResponse(res, 400, renderErrorPage(400, "Invalid save request"), false); }
         if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
           return htmlResponse(res, 400, renderErrorPage(400, "Invalid save request"), false);
         }
-        if (typeof payload.content !== "string" || Buffer.byteLength(payload.content, "utf8") > MAX_SAVE_BYTES
-          || typeof payload.hash !== "string" || !/^[a-f0-9]{64}$/.test(payload.hash)
-          || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(payload.content)) {
-          return htmlResponse(res, 400, renderErrorPage(400, "Invalid Markdown content"), false);
+        const reverting = payload.action === "revert";
+        const validContent = reverting
+          ? payload.content === undefined
+          : typeof payload.content === "string" && Buffer.byteLength(payload.content, "utf8") <= MAX_SAVE_BYTES
+            && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(payload.content);
+        if (!validContent || typeof payload.hash !== "string" || !/^[a-f0-9]{64}$/.test(payload.hash)) {
+          return htmlResponse(res, 400, renderErrorPage(400, "Invalid Markdown request"), false);
         }
-        const content = payload.content as string;
+        const content = payload.content as string | undefined;
         const expectedHash = payload.hash as string;
         const canonicalRoot = await realpath(root);
         const canonicalTarget = await realpath(targetPath);
         const canonicalRelative = path.relative(canonicalRoot, canonicalTarget);
         if (isOutsideRoot(canonicalRelative)) return htmlResponse(res, 404, renderErrorPage(404, "Not found"), false);
+        if (reverting) {
+          const reverted = await withSaveLock(canonicalTarget, async () => {
+            let current = root;
+            for (const segment of segments) {
+              current = path.join(current, segment);
+              const part = await lstat(current);
+              if (part.isSymbolicLink()) return { status: 404 as const, error: "Not found" };
+            }
+            const existing = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+            try {
+              const stat = await existing.stat();
+              if (!stat.isFile() || stat.size > MAX_SAVE_BYTES) return { status: 415 as const, error: "File cannot be reverted" };
+              const bytes = Buffer.alloc(MAX_SAVE_BYTES + 1);
+              let length = 0;
+              while (length < bytes.length) {
+                const { bytesRead } = await existing.read(bytes, length, bytes.length - length, length);
+                if (!bytesRead) break;
+                length += bytesRead;
+              }
+              if (length > MAX_SAVE_BYTES) return { status: 415 as const, error: "File cannot be reverted" };
+              const currentText = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes.subarray(0, length));
+              const currentHash = createHash("sha256").update(currentText, "utf8").digest("hex");
+              if (currentHash !== expectedHash) return { status: 409 as const, hash: currentHash };
+              const headState = await readHeadFile(root, relative);
+              if (headState.kind !== "tracked") return {
+                status: 409 as const, error: headState.kind === "untracked"
+                  ? "Untracked files cannot be reverted" : "Git HEAD is unavailable",
+              };
+              let restoredText: string;
+              try { restoredText = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(headState.content); }
+              catch { return { status: 415 as const, error: "HEAD file is not supported text" }; }
+              if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(restoredText)) {
+                return { status: 415 as const, error: "HEAD file is not supported text" };
+              }
+              const latest = await lstat(targetPath);
+              if (!latest.isFile() || latest.dev !== stat.dev || latest.ino !== stat.ino) {
+                return { status: 409 as const, error: "File changed; reload before reverting" };
+              }
+              const temporary = path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${randomBytes(12).toString("hex")}.tmp`);
+              try {
+                const replacement = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, stat.mode & 0o777);
+                try {
+                  await replacement.chmod(stat.mode & 0o777);
+                  await replacement.writeFile(headState.content);
+                  await replacement.sync();
+                } finally { await replacement.close(); }
+                const check = await lstat(targetPath);
+                if (!check.isFile() || check.dev !== stat.dev || check.ino !== stat.ino) {
+                  return { status: 409 as const, error: "File changed; reload before reverting" };
+                }
+                const late = await readTextFile(targetPath);
+                if (late === null || createHash("sha256").update(late, "utf8").digest("hex") !== expectedHash) {
+                  return { status: 409 as const, error: "File changed; reload before reverting" };
+                }
+                await rename(temporary, targetPath);
+              } finally { await unlink(temporary).catch(() => {}); }
+              return { status: 200 as const, content: restoredText, hash: createHash("sha256").update(restoredText, "utf8").digest("hex") };
+            } finally { await existing.close(); }
+          });
+          if (reverted.status !== 200) {
+            res.statusCode = reverted.status;
+            res.setHeader("Content-Type", reverted.status === 409 ? "application/json; charset=utf-8" : "text/html; charset=utf-8");
+            res.setHeader("Cache-Control", "no-store");
+            return res.end(reverted.status === 409 ? JSON.stringify({ error: "conflict", hash: reverted.hash, message: reverted.error })
+              : renderErrorPage(reverted.status, reverted.error));
+          }
+          return sendFileState(res, root, relative, reverted.content, reverted.hash);
+        }
         const saved = await withSaveLock(canonicalTarget, async () => {
           // Check again under the per-path lock; simultaneous same-base saves
           // must serialize before the hash comparison and replacement.
@@ -310,7 +422,7 @@ export function createFileBrowserMiddleware(
               const replacement = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, stat.mode & 0o777);
               try {
                 await replacement.chmod(stat.mode & 0o777);
-                await replacement.writeFile(content, "utf8");
+                await replacement.writeFile(content!, "utf8");
                 await replacement.sync();
               }
               finally { await replacement.close(); }
@@ -341,7 +453,7 @@ export function createFileBrowserMiddleware(
               if (lateHash !== expectedHash) return { status: 409, hash: lateHash };
               await rename(temporary, targetPath);
             } finally { await unlink(temporary).catch(() => {}); }
-            return { status: 200, hash: createHash("sha256").update(content, "utf8").digest("hex") };
+            return { status: 200, hash: createHash("sha256").update(content!, "utf8").digest("hex") };
           } finally {
             await target.close();
           }
@@ -383,6 +495,10 @@ export function createFileBrowserMiddleware(
 
         const language = languageForFilename(name);
         const editable = [".md", ".markdown"].includes(path.extname(name).toLowerCase());
+        if (req.method === "GET" && new URL(target, "http://preview.invalid").searchParams.get("format") === "json") {
+          if (!editable) return jsonResponse(res, 415, { error: "Only Markdown files are supported" });
+          return sendFileState(res, root, relative, text, createHash("sha256").update(text, "utf8").digest("hex"));
+        }
         const editToken = editable ? csrf(relative) : undefined;
         const sourceHash = createHash("sha256").update(text, "utf8").digest("hex");
         if (editToken) {
