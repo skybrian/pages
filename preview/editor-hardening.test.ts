@@ -66,6 +66,35 @@ function setup(options: { source: string; hash?: string; draft?: string; fetch?:
 const wait = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("Markdown editor hardening", () => {
+  it("retains a UTF-8 BOM and uniform CRLF line endings when autosaving", async () => {
+    const source = "\uFEFFfirst\r\nsecond\r\n";
+    const submitted: Array<{ content: string; hash: string }> = [];
+    const { window, click, replace } = setup({
+      source,
+      fetch: (async (_url, init) => {
+        if (init?.method === "POST") {
+          submitted.push(JSON.parse(String(init.body)));
+          return new Response(JSON.stringify({ hash: "hash-saved" }));
+        }
+        return new Response(JSON.stringify({
+          content: source, hash: "hash-new", renderedHtml: "", diff: "",
+          canRevert: false, gitStatus: "tracked",
+        }));
+      }) as typeof fetch,
+    });
+    try {
+      click("editor");
+      await wait();
+      replace("\uFEFFchanged\r\nsecond\r\n");
+      await wait(600);
+      assert.deepEqual(submitted, [{
+        content: "\uFEFFchanged\r\nsecond\r\n", hash: "hash-new",
+      }]);
+    } finally {
+      window.close();
+    }
+  });
+
   it("does not upgrade a stale draft base hash when restoring it", async () => {
     const stale = JSON.stringify({ content: "# stale draft\n", baseHash: "old-hash" });
     const { window, click, replace, key } = setup({
