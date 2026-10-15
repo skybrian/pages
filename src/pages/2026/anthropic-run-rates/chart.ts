@@ -1,5 +1,6 @@
 import * as Plot from "@observablehq/plot";
 import { defineChartPage } from "../../../charts/definition.ts";
+import { estimateQuarter } from "./estimates.ts";
 
 interface Point {
   date: string;
@@ -134,6 +135,74 @@ export default defineChartPage<RevenueData>({
       }
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.");
+      return svg;
+    },
+  }, {
+    id: "comparison",
+    label: "Comparison",
+    alt: "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q3 includes linear extrapolation beyond July 31.",
+    render(data, { document, width, height, mode }) {
+      const compact = width < 560;
+      const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
+      const points = data.quarterlyRevenue.flatMap((quarter, index) => {
+        const estimate = estimateQuarter(data.runRate, quarter.date);
+        return [
+          { x: index - 0.2, x1: index - 0.38, x2: index - 0.02, value: quarter.value,
+            labelValue: compact ? Math.max(quarter.value, estimate.value) : quarter.value,
+            kind: "Reported", label: quarter.label, projected: false,
+            title: `${quarter.dateText}\nReported: ${quarter.label}\n${quarter.source}` },
+          { x: index + 0.2, x1: index + 0.02, x2: index + 0.38, value: estimate.value,
+            labelValue: compact ? Math.max(quarter.value, estimate.value) : estimate.value,
+            kind: "Run-rate estimate", label: `~$${estimate.value.toFixed(1)}B${estimate.extrapolated ? "*" : ""}`,
+            projected: estimate.extrapolated,
+            title: `${quarter.dateText}\nRun-rate area estimate: $${estimate.value.toFixed(2)}B\n${estimate.extrapolated
+              ? "Includes linear extrapolation using the last two milestones."
+              : "Piecewise-linear interpolation between milestones."}` },
+        ];
+      });
+      const svg = Plot.plot({
+        document, width, height: renderHeight,
+        marginTop: 55, marginRight: compact ? 22 : 35,
+        marginBottom: 85, marginLeft: compact ? 48 : 62,
+        x: { domain: [-0.5, data.quarterlyRevenue.length - 0.5],
+          ticks: data.quarterlyRevenue.map((_, index) => index),
+          tickFormat: (index) => data.quarterlyRevenue[Number(index)]!.dateText, label: null },
+        y: { domain: [0, Math.ceil(Math.max(...points.map((point) => point.value)) / 5) * 5],
+          ticks: 5, label: null, grid: true },
+        color: { domain: ["Reported", "Run-rate estimate"], range: ["#2457a7", "#b65e16"] },
+        marks: [
+          Plot.ruleY([0]),
+          Plot.rect(points.filter((point) => !point.projected), {
+            x1: "x1", x2: "x2", y1: 0, y2: "value", fill: "kind", stroke: "kind",
+            tip: mode === "interactive", title: "title" }),
+          Plot.rect(points.filter((point) => point.projected), {
+            x1: "x1", x2: "x2", y1: 0, y2: "value", fill: "kind", fillOpacity: 0.65,
+            stroke: "kind", strokeDasharray: "4,3", tip: mode === "interactive", title: "title" }),
+          ...["Reported", "Run-rate estimate"].map((kind) => Plot.text(
+            points.filter((point) => point.kind === kind), { x: "x", y: "labelValue", text: "label",
+            dy: compact && kind === "Reported" ? -27 : -12,
+            fontSize: mode === "preview" ? 16 : compact ? 11 : 14, fontWeight: 650,
+            fill: "kind", stroke: "white", strokeWidth: 3, paintOrder: "stroke" })),
+        ],
+      }) as unknown as SVGSVGElement;
+      // Keep the legend and caveat in the SVG so they survive standalone export.
+      const text = (label: string, x: number, y: number, size: number, fill = "#172323") => {
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        node.setAttribute("x", String(x));
+        node.setAttribute("y", String(y));
+        node.setAttribute("font-size", String(size));
+        node.setAttribute("text-anchor", "start");
+        node.setAttribute("fill", fill);
+        node.textContent = label;
+        svg.append(node);
+      };
+      const left = compact ? 48 : 62;
+      text("■ Reported", left, 23, compact ? 11 : 14, "#2457a7");
+      text("■ Run-rate estimate", left + (compact ? 87 : 120), 23, compact ? 11 : 14, "#b65e16");
+      text("* Q3 extends the May–July trend", left, renderHeight - 30, compact ? 10 : 12);
+      text("beyond July 31. All values in $B.", left, renderHeight - 14, compact ? 10 : 12);
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q3 includes linear extrapolation beyond July 31.");
       return svg;
     },
   }],

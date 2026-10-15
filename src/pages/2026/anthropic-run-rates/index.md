@@ -5,7 +5,15 @@ updated: 2026-10-15
 layout: chart-page.njk
 ---
 
-Quarterly revenue is money earned over three months; an annual run rate extrapolates revenue at a point in time to a full year. The two charts keep these measures separate. Quarterly figures are not annualized here.
+Quarterly revenue is money earned over three months; an annual run rate extrapolates revenue at a point in time to a full year. Quarterly figures are not annualized here.
+
+## Comparison method
+
+The Comparison tab estimates quarterly revenue from the area under the run-rate curve. It joins the milestones with straight lines and integrates each calendar quarter, dividing by 365 days to convert annualized revenue into revenue for that period. Quarters run from January 1 to April 1, April 1 to July 1, and July 1 to October 1 (exclusive), in UTC.
+
+For Q3, the estimate continues the slope between May 10 and July 31 beyond the last milestone through the end of September. This is a linear extrapolation, not a reported run rate or a company forecast. The Run Rate tab still shows only the reported milestones.
+
+These are rough comparisons, not reconstructed financial statements: some milestones are approximate or lower bounds, the May date is approximate, and reported run rates may not map exactly to recognized revenue. The calculation uses the plotted numeric values, including $30B, $47B, and $65B for the “greater than” milestones; it does not model that uncertainty.
 
 ## Quarterly revenue
 

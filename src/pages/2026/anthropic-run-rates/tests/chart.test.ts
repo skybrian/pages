@@ -16,6 +16,7 @@ it("preserves static chart geometry and labels when enhanced", async () => {
 it("orders the simplified tabs and omits redundant y-axis titles", () => {
   assert.deepEqual(chart.charts.map((view) => [view.id, view.label]), [
     ["quarterly-revenue", "Quarterly Revenue"], ["run-rate", "Run Rate"],
+    ["comparison", "Comparison"],
   ]);
   const document = new JSDOM("").window.document;
   for (const view of chart.charts) {
@@ -24,6 +25,30 @@ it("orders the simplified tabs and omits redundant y-axis titles", () => {
     });
     assert.equal(svg.querySelector('g[aria-label="y-axis label"]'), null);
     assert.ok(svg.querySelectorAll('g[aria-label="y-axis tick label"] text').length > 0);
+  }
+});
+
+it("compares reported and integrated revenue with an exported legend and extrapolation caveat", () => {
+  const view = chart.charts.find((view) => view.id === "comparison")!;
+  const document = new JSDOM("").window.document;
+  for (const width of [350, 720, 1200]) {
+    const render = (mode: "static" | "interactive" | "preview") =>
+      view.render(chart.parseData(data), { document, width, height: 400, mode });
+    const svg = render("static");
+    assert.equal(svg.getAttribute("aria-label"), view.alt);
+    assert.equal(svg.getAttribute("role"), "img");
+    assert.equal(svg.querySelectorAll('g[aria-label="rect"] rect').length, 6);
+    assert.equal(svg.querySelectorAll('g[stroke-dasharray="4,3"] rect').length, 1);
+    for (const label of ["~$4.1B", "~$11.5B", "~$17.3B*", "■ Reported", "■ Run-rate estimate",
+      "* Q3 extends the May–July trend", "beyond July 31. All values in $B."]) {
+      assert.ok(svg.textContent?.includes(label), label);
+    }
+    const labels = (element: SVGSVGElement) => [...element.querySelectorAll("text")].map((text) => ({
+      text: text.textContent, x: text.getAttribute("x"), y: text.getAttribute("y"),
+      transform: text.getAttribute("transform"),
+    }));
+    assert.deepEqual(labels(svg), labels(render("interactive")));
+    assert.ok(render("preview").textContent?.includes("~$17.3B*"));
   }
 });
 
