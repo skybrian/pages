@@ -13,6 +13,20 @@ it("preserves static chart geometry and labels when enhanced", async () => {
   await assertStaticChartParity(new URL("../", import.meta.url), chart);
 });
 
+it("orders the simplified tabs and omits redundant y-axis titles", () => {
+  assert.deepEqual(chart.charts.map((view) => [view.id, view.label]), [
+    ["quarterly-revenue", "Quarterly Revenue"], ["run-rate", "Run Rate"],
+  ]);
+  const document = new JSDOM("").window.document;
+  for (const view of chart.charts) {
+    const svg = view.render(chart.parseData(data), {
+      document, width: 720, height: 400, mode: "static",
+    });
+    assert.equal(svg.querySelector('g[aria-label="y-axis label"]'), null);
+    assert.ok(svg.querySelectorAll('g[aria-label="y-axis tick label"] text').length > 0);
+  }
+});
+
 it("preserves all reported milestones and labels", () => {
   assert.deepEqual(data.filter((row) => row.series === "runrate").map((row) => [row.date, row.value, row.label]), [
     ["2025-12-31", 9, "~$9B"], ["2026-02-12", 14, "$14B"],
@@ -48,7 +62,7 @@ it("renders quarterly revenue separately from run-rate milestones at every size"
     assert.equal(render("preview").getAttribute("height"), "196");
   }
   const document = new JSDOM("").window.document;
-  const runrate = chart.charts[0].render(chart.parseData(data), {
+  const runrate = chart.charts.find((view) => view.id === "run-rate")!.render(chart.parseData(data), {
     document, width: 720, height: 400, mode: "static",
   });
   assert.ok(!runrate.textContent?.includes("$16.8B"));
@@ -71,18 +85,18 @@ it("rejects invalid values, unknown measures, and missing series", () => {
 it("renders an accessible chart at the supplied preview dimensions", () => {
   const parsed = chart.parseData(data);
   const document = new JSDOM("").window.document;
-  const svg = chart.charts[0].render(parsed, {
+  const svg = chart.charts.find((view) => view.id === "run-rate")!.render(parsed, {
     document, width: 1000, height: 630, mode: "preview",
   });
   assert.equal(svg.getAttribute("height"), "630");
-  assert.equal(svg.getAttribute("aria-label"), chart.charts[0].alt);
+  assert.equal(svg.getAttribute("aria-label"), chart.charts.find((view) => view.id === "run-rate")!.alt);
   assert.ok(svg.querySelectorAll("circle").length >= 6);
-  assert.ok(svg.textContent?.includes("Annual run rate"));
+  assert.equal(svg.querySelector('g[aria-label="y-axis label"]'), null);
 });
 
 it("keeps the interactive mobile chart tall and anchors endpoint labels inward", () => {
   const document = new JSDOM("").window.document;
-  const svg = chart.charts[0].render(chart.parseData(data), {
+  const svg = chart.charts.find((view) => view.id === "run-rate")!.render(chart.parseData(data), {
     document, width: 350, height: 196, mode: "interactive",
   });
   assert.equal(svg.getAttribute("height"), "400");

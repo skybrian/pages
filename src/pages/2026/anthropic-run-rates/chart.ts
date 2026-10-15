@@ -32,8 +32,39 @@ function parseData(value: unknown): Point[] {
 export default defineChartPage<Point[]>({
   parseData,
   charts: [{
+    id: "quarterly-revenue",
+    label: "Quarterly Revenue",
+    alt: "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.",
+    render(data, { document, width, height, mode }) {
+      const points = data.filter((d) => d.series === "quarterly");
+      const compact = width < 560;
+      const svg = Plot.plot({
+        document, width, height: mode !== "preview" ? Math.max(height, 400) : height,
+        marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,
+        marginBottom: 62, marginLeft: compact ? 48 : 62,
+        x: { domain: points.map((d) => d.dateText), label: null, padding: 0.35 },
+        y: { domain: [0, 20], ticks: 5, label: null, grid: true },
+        marks: [
+          Plot.ruleY([0]),
+          Plot.barY(points, {
+            x: "dateText", y: "value", fill: "#2457a7",
+            tip: mode === "interactive",
+            title: (d: Point) => `${d.dateText}\n${d.label}\n${d.source}`,
+          }),
+          Plot.text(points, {
+            x: "dateText", y: "value", text: "label", dy: -13,
+            fill: "#183e78", fontWeight: 650,
+            fontSize: mode === "preview" ? 16 : compact ? 12 : 14,
+          }),
+        ],
+      }) as unknown as SVGSVGElement;
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.");
+      return svg;
+    },
+  }, {
     id: "run-rate",
-    label: "Anthropic annual revenue run rate",
+    label: "Run Rate",
     alt: "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.",
     render(data, { document, width, height, mode }) {
       const points = data.filter((d) => d.series === "runrate")
@@ -47,7 +78,7 @@ export default defineChartPage<Point[]>({
         x: { type: "utc", domain: [new Date("2025-12-31T00:00:00Z"), new Date("2026-07-31T00:00:00Z")],
           ticks: compact ? [new Date("2025-12-31T00:00:00Z"), new Date("2026-04-01T00:00:00Z"), new Date("2026-07-31T00:00:00Z")] : 5,
           tickFormat: (d) => new Date(d).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", year: "2-digit" }), label: null },
-        y: { domain: [0, 70], ticks: 8, label: "Annual run rate ($B)", grid: true },
+        y: { domain: [0, 70], ticks: 8, label: null, grid: true },
         marks: [
           Plot.line(points, { x: "dateValue", y: "value", stroke: "#2457a7", strokeWidth: 3 }),
           Plot.dot(points, { x: "dateValue", y: "value", fill: "#2457a7", stroke: "white", strokeWidth: 2, r: 5,
@@ -95,37 +126,6 @@ export default defineChartPage<Point[]>({
       }
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", "Reported Anthropic annual run-rate milestones, in billions of dollars, from the end of 2025 through July 2026.");
-      return svg;
-    },
-  }, {
-    id: "quarterly-revenue",
-    label: "Anthropic quarterly revenue",
-    alt: "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.",
-    render(data, { document, width, height, mode }) {
-      const points = data.filter((d) => d.series === "quarterly");
-      const compact = width < 560;
-      const svg = Plot.plot({
-        document, width, height: mode !== "preview" ? Math.max(height, 400) : height,
-        marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,
-        marginBottom: 62, marginLeft: compact ? 48 : 62,
-        x: { domain: points.map((d) => d.dateText), label: null, padding: 0.35 },
-        y: { domain: [0, 20], ticks: 5, label: "Quarterly revenue ($B)", grid: true },
-        marks: [
-          Plot.ruleY([0]),
-          Plot.barY(points, {
-            x: "dateText", y: "value", fill: "#2457a7",
-            tip: mode === "interactive",
-            title: (d: Point) => `${d.dateText}\n${d.label}\n${d.source}`,
-          }),
-          Plot.text(points, {
-            x: "dateText", y: "value", text: "label", dy: -13,
-            fill: "#183e78", fontWeight: 650,
-            fontSize: mode === "preview" ? 16 : compact ? 12 : 14,
-          }),
-        ],
-      }) as unknown as SVGSVGElement;
-      svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.");
       return svg;
     },
   }],

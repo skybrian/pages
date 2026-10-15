@@ -1,5 +1,5 @@
 ---
-title: Anthropic revenue and run rate
+title: Anthropic revenue
 date: 2026-10-01
 layout: chart-page.njk
 ---
