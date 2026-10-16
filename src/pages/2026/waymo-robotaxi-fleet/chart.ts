@@ -20,7 +20,7 @@ function parseData(value: unknown): FleetData {
     const point = item as Record<string, unknown>;
     if (typeof point.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(point.date) ||
         !Number.isFinite(Date.parse(point.date)) || point.date <= previous ||
-        !Number.isSafeInteger(point.vehicles) || (point.vehicles as number) <= 0 ||
+        typeof point.vehicles !== "number" || !Number.isSafeInteger(point.vehicles) || point.vehicles <= 0 ||
         (point.qualifier !== "about" && point.qualifier !== "more than") ||
         typeof point.source !== "string" || !point.source ||
         typeof point.url !== "string" || !point.url.startsWith("https://")) {
