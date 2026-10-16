@@ -57,12 +57,13 @@ export default defineChartPage<FleetData>({
             x: "when", y: "vehicles", r: 5, fill: "#2457a7", stroke: "white", strokeWidth: 1.5,
             tip: mode === "interactive", title: "tooltip",
           }),
-          Plot.text(points, {
+          ...points.map((point, i) => Plot.text([point], {
             x: "when", y: "vehicles",
             text: (d: (typeof points)[number]) => (d.qualifier === "about" ? "~" : ">") + d.vehicles.toLocaleString("en-US"),
+            textAnchor: i === 0 ? "start" : i === points.length - 1 ? "end" : "middle",
             dy: -13, fontSize: mode === "preview" ? 16 : compact ? 11 : 13,
             fill: "#183e78", stroke: "white", strokeWidth: 3, paintOrder: "stroke",
-          }),
+          })),
         ],
       }) as unknown as SVGSVGElement;
       svg.setAttribute("role", "img");
