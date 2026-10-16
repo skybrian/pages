@@ -36,7 +36,7 @@ export default defineChartPage<FleetData>({
   charts: [{
     id: "fleet",
     label: "Fleet size",
-    alt: "Reported U.S. Waymo robotaxi fleet size grew from about 700 in August 2024 to more than 4,000 in September 2026. Intermediate values are 1,500-plus in May 2025 and 2,500-plus in November 2025 and February 2026.",
+    alt: "Reported U.S. Waymo robotaxi fleet size grew from about 700 in August 2024 to more than 4,000 in September 2026. Intermediate values are 1,500-plus in November 2025 and 2,500-plus in December 2025.",
     render(data, { document, width, height, mode }) {
       const compact = width < 560;
       const points = data.fleet.map((d) => ({
