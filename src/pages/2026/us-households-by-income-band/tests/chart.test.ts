@@ -36,6 +36,51 @@ it("rejects empty input and nonpositive denominators", () => {
 });
 
 for (const chart of definition.charts) {
+  it(`anchors ${chart.id} tooltips at each band's stacked upper edge`, () => {
+    const dom = new JSDOM("");
+    try {
+      const { document, MouseEvent } = dom.window;
+      // JSDOM has no SVG text layout; tooltip placement is reviewed in-browser.
+      Object.defineProperty(dom.window.SVGElement.prototype, "getBBox", {
+        value: () => ({ x: 0, y: 0, width: 100, height: 30 }),
+      });
+      const fixture = definition.parseData([
+        { year: 2000, low: 20, middle: 30, high: 50, total: 100, median_income: 50000 },
+        { year: 2001, low: 10, middle: 20, high: 20, total: 50, median_income: 50000 },
+      ]);
+      for (const width of [360, 940]) {
+        const svg = chart.render(fixture, { document, width, height: 526, mode: "interactive" });
+        document.body.append(svg);
+        const compact = width < 600;
+        const left = compact ? 48 : 76;
+        const right = compact ? 24 : 70;
+        const domainMax = chart.id === "shares" ? 100 : 142;
+        const y = (value: number) => 526 - 44 - value / domainMax * (526 - 44 - 30);
+        for (const row of fixture) {
+          const x = left + (row.year - 1967) / (2024 - 1967) * (width - left - right);
+          let cumulative = 0;
+          for (const [key, band] of [["low", "Low-income"], ["middle", "Middle-income"], ["high", "High-income"]] as const) {
+            const value = chart.id === "shares" ? row[key] / row.total * 100 : row[key];
+            cumulative += value;
+            svg.dispatchEvent(new MouseEvent("pointermove", { clientX: x, clientY: y(cumulative) }));
+            const dot = svg.querySelector('g[aria-label="dot"] circle');
+            assert.ok(dot, `${band} tooltip anchor is selected`);
+            assert.ok(Math.abs(Number(dot.getAttribute("cx")) - x) < 1e-6);
+            assert.ok(Math.abs(Number(dot.getAttribute("cy")) - y(cumulative)) < 1e-6,
+              `${band} anchor uses the cumulative value, not the band's own value`);
+            const tooltipText = [...svg.querySelectorAll('g[aria-label="tip"] text tspan')]
+              .map((line) => line.textContent?.replaceAll("\u200b", "")).join("\n");
+            assert.equal(tooltipText,
+              `${row.year}\n${band}: ${value.toFixed(1)}${chart.id === "shares" ? "%" : "M households"}`);
+          }
+        }
+        svg.remove();
+      }
+    } finally {
+      dom.window.close();
+    }
+  });
+
   it(`renders the ${chart.id} chart at desktop and mobile widths`, () => {
     const document = new JSDOM("").window.document;
     const desktop = chart.render(rows, { document, width: 940, height: 526, mode: "preview" });

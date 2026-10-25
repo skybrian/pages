@@ -75,14 +75,17 @@ function renderStackedArea(
       strokeWidth: 1.2,
       curve: "basis",
     })),
-    ...(mode === "interactive" ? [Plot.dot(values, Plot.pointerX({
+    ...(mode === "interactive" ? [Plot.dot(values, Plot.pointerX(Plot.stackY2({
+      order: bands.map(({ band }) => band),
+    }, {
+      z: "band",
       x: "year",
       y: "value",
       r: 0,
       fill: "transparent",
       tip: true,
       title: (d: BandRow) => `${d.year}\n${d.band}: ${d.value.toFixed(1)}${shares ? "%" : "M households"}`,
-    }))] : []),
+    })))] : []),
     Plot.ruleY(shares ? [0, 20, 40, 60, 80, 100] : [0, 20, 40, 60, 80, 100, 120, 140], { stroke: "#d7d7d7" }),
     Plot.text(
       labelMarks,
