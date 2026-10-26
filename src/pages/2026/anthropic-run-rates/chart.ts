@@ -43,14 +43,15 @@ export default defineChartPage<RevenueData>({
   charts: [{
     id: "quarterly-revenue",
     label: "Quarterly Revenue",
-    alt: "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.",
+    alt: "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1 and $11.555 billion in Q2 (S-1, unaudited); $16.8 billion in Q3 (press report, not in S-1). Not annualized.",
     render(data, { document, width, height, mode }) {
       const points = data.quarterlyRevenue;
       const compact = width < 560;
+      const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
       const svg = Plot.plot({
-        document, width, height: mode !== "preview" ? Math.max(height, 400) : height,
+        document, width, height: renderHeight,
         marginTop: compact ? 42 : 52, marginRight: compact ? 22 : 35,
-        marginBottom: 62, marginLeft: compact ? 48 : 62,
+        marginBottom: 92, marginLeft: compact ? 48 : 62,
         x: { domain: points.map((d) => d.dateText), label: null, padding: 0.35 },
         y: { domain: [0, 20], ticks: 5, label: null, grid: true },
         marks: [
@@ -67,8 +68,21 @@ export default defineChartPage<RevenueData>({
           }),
         ],
       }) as unknown as SVGSVGElement;
+      for (const [index, label] of [
+        "Q1–Q2: S-1 (unaudited).",
+        "Q3: press report, not in S-1. All values in $B.",
+      ].entries()) {
+        const note = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        note.setAttribute("x", String(compact ? 48 : 62));
+        note.setAttribute("y", String(renderHeight - 30 + index * 16));
+        note.setAttribute("font-size", String(compact ? 10 : 12));
+        note.setAttribute("fill", "#172323");
+        note.setAttribute("text-anchor", "start");
+        note.textContent = label;
+        svg.append(note);
+      }
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: approximately $4.8 billion in Q1, $11.5 billion in Q2, and $16.8 billion in Q3. Not annualized.");
+      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1 and $11.555 billion in Q2 (S-1, unaudited); $16.8 billion in Q3 (press report, not in S-1). Not annualized.");
       return svg;
     },
   }, {
@@ -140,7 +154,7 @@ export default defineChartPage<RevenueData>({
   }, {
     id: "comparison",
     label: "Comparison",
-    alt: "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q3 includes linear extrapolation beyond July 31.",
+    alt: "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q2 reported figures are from the unaudited S-1; Q3 is a press report. Q3 estimates include linear extrapolation beyond July 31.",
     render(data, { document, width, height, mode }) {
       const compact = width < 560;
       const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
@@ -163,7 +177,7 @@ export default defineChartPage<RevenueData>({
       const svg = Plot.plot({
         document, width, height: renderHeight,
         marginTop: 55, marginRight: compact ? 22 : 35,
-        marginBottom: 85, marginLeft: compact ? 48 : 62,
+        marginBottom: 101, marginLeft: compact ? 48 : 62,
         x: { domain: [-0.5, data.quarterlyRevenue.length - 0.5],
           ticks: data.quarterlyRevenue.map((_, index) => index),
           tickFormat: (index) => data.quarterlyRevenue[Number(index)]!.dateText, label: null },
@@ -199,10 +213,11 @@ export default defineChartPage<RevenueData>({
       const left = compact ? 48 : 62;
       text("■ Reported", left, 23, compact ? 11 : 14, "#2457a7");
       text("■ Run-rate estimate", left + (compact ? 87 : 120), 23, compact ? 11 : 14, "#b65e16");
-      text("* Q3 extends the May–July trend", left, renderHeight - 30, compact ? 10 : 12);
-      text("beyond July 31. All values in $B.", left, renderHeight - 14, compact ? 10 : 12);
+      text("* Q3 extends the May–July trend", left, renderHeight - 46, compact ? 10 : 12);
+      text("beyond July 31. All values in $B.", left, renderHeight - 30, compact ? 10 : 12);
+      text("Reported: Q1–Q2 S-1 (unaudited); Q3 press.", left, renderHeight - 14, compact ? 10 : 12);
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q3 includes linear extrapolation beyond July 31.");
+      svg.setAttribute("aria-label", "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q2 reported figures are from the unaudited S-1; Q3 is a press report. Q3 estimates include linear extrapolation beyond July 31.");
       return svg;
     },
   }],

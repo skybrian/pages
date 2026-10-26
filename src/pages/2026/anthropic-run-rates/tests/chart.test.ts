@@ -40,7 +40,7 @@ it("compares reported and integrated revenue with an exported legend and extrapo
     assert.equal(svg.querySelectorAll('g[aria-label="rect"] rect').length, 6);
     assert.equal(svg.querySelectorAll('g[stroke-dasharray="4,3"] rect').length, 1);
     for (const label of ["~$4.1B", "~$11.5B", "~$17.3B*", "■ Reported", "■ Run-rate estimate",
-      "* Q3 extends the May–July trend", "beyond July 31. All values in $B."]) {
+      "* Q3 extends the May–July trend", "beyond July 31. All values in $B.", "Reported: Q1–Q2 S-1 (unaudited); Q3 press."]) {
       assert.ok(svg.textContent?.includes(label), label);
     }
     const labels = (element: SVGSVGElement) => [...element.querySelectorAll("text")].map((text) => ({
@@ -80,7 +80,7 @@ it("uses quarter-end run-rate ticks through Q3 without extrapolating the data", 
 it("renders quarterly revenue separately from run-rate milestones at every size", () => {
   const quarterly = chart.charts.find((view) => view.id === "quarterly-revenue")!;
   assert.deepEqual(data.quarterlyRevenue.map((row) => [row.date, row.value]), [
-    ["2026-03-31", 4.8], ["2026-06-30", 11.5], ["2026-09-30", 16.8],
+    ["2026-03-31", 4.731], ["2026-06-30", 11.555], ["2026-09-30", 16.8],
   ]);
   for (const width of [350, 720, 1200]) {
     const document = new JSDOM("").window.document;
@@ -92,10 +92,13 @@ it("renders quarterly revenue separately from run-rate milestones at every size"
     assert.equal(svg.getAttribute("aria-label"), quarterly.alt);
     assert.equal(svg.getAttribute("height"), "400");
     assert.equal(svg.querySelectorAll('g[aria-label="bar"] rect').length, 3);
-    for (const text of ["Q1 2026", "Q2 2026", "Q3 2026", "~$4.8B", "$11.5B", "$16.8B"]) {
+    for (const text of ["Q1 2026", "Q2 2026", "Q3 2026", "$4.731B", "$11.555B", "$16.8B"]) {
       assert.ok(svg.textContent?.includes(text));
     }
     assert.ok(!svg.textContent?.includes(">$65B"));
+    assert.equal([...svg.querySelectorAll("text")]
+      .find((text) => text.textContent === "Q1–Q2: S-1 (unaudited).")?.getAttribute("text-anchor"), "start");
+    assert.ok(svg.textContent?.includes("Q3: press report, not in S-1. All values in $B."));
     const labels = (element: SVGSVGElement) => [...element.querySelectorAll("text")].map((text) => ({
       text: text.textContent, x: text.getAttribute("x"), y: text.getAttribute("y"),
       transform: text.getAttribute("transform"),

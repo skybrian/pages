@@ -8,8 +8,8 @@
     {"date":"2026-07-31","value":65,"label":">$65B","dateText":"End of July 2026","source":"Reuters · Aug. 17, 2026","url":"https://www.reuters.com/technology/anthropic-revenue-run-rate-tops-65-billion-source-says-2026-08-17/"}
   ],
   "quarterlyRevenue": [
-    {"date":"2026-03-31","value":4.8,"label":"~$4.8B","dateText":"Q1 2026","source":"Financial Times via Simon Willison · Oct. 15, 2026","url":"https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/"},
-    {"date":"2026-06-30","value":11.5,"label":"$11.5B","dateText":"Q2 2026","source":"Financial Times via Simon Willison · Oct. 15, 2026","url":"https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/"},
+    {"date":"2026-03-31","value":4.731,"label":"$4.731B","dateText":"Q1 2026","source":"Anthropic S-1 · Oct. 26, 2026 (unaudited)","url":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/anthropicpbc-sx1.htm"},
+    {"date":"2026-06-30","value":11.555,"label":"$11.555B","dateText":"Q2 2026","source":"Anthropic S-1 · Oct. 26, 2026 (unaudited)","url":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/anthropicpbc-sx1.htm"},
     {"date":"2026-09-30","value":16.8,"label":"$16.8B","dateText":"Q3 2026","source":"Financial Times via Simon Willison · Oct. 15, 2026","url":"https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/"}
   ]
 }

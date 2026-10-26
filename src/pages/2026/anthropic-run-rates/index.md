@@ -1,11 +1,13 @@
 ---
 title: Anthropic revenue
 date: 2026-10-01
-updated: 2026-10-15
+updated: 2026-10-26
 layout: chart-page.njk
 ---
 
 Quarterly revenue is money earned over three months; an annual run rate extrapolates revenue at a point in time to a full year. Quarterly figures are not annualized here.
+
+The [S-1 filed October 26, 2026](https://www.sec.gov/Archives/edgar/data/2130357/000162828026067168/anthropicpbc-sx1.htm) replaces the earlier press figures for Q1 and Q2 with $4.731B and $11.555B. Its quarterly financial table ends in June; Q3 remains a press-reported figure, not an S-1 result. The S-1’s quarterly figures are unaudited.
 
 ## Comparison method
 
@@ -17,15 +19,30 @@ These are rough comparisons, not reconstructed financial statements: some milest
 
 ## Quarterly revenue
 
+| Quarter | Revenue | Source |
+| --- | ---: | --- |
+| Q1 2026 (Jan–Mar) | $4.731B | S-1, unaudited |
+| Q2 2026 (Apr–Jun) | $11.555B | S-1, unaudited |
+| Q3 2026 (Jul–Sep) | $16.8B | Press report |
+
+Q1–Q2: S-1, “Quarterly Results of Operations,” p. 158; the table reports amounts in millions, converted here to billions. Combined first-half revenue is $16.286B.
+
+Q3 source: [Simon Willison · Oct. 15, 2026](https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/), summarizing [Financial Times reporting](https://www.ft.com/content/11632d03-358c-454b-af95-d06d4072932b) on figures Anthropic told investors. The Q3 figure is not included in the S-1’s financial statements.
+
+### Earlier quarters disclosed in the S-1
+
 | Quarter | Revenue |
 | --- | ---: |
-| Q1 2026 (Jan–Mar) | ~$4.8B |
-| Q2 2026 (Apr–Jun) | $11.5B |
-| Q3 2026 (Jul–Sep) | $16.8B |
+| Q1 2025 | $0.376B |
+| Q2 2025 | $0.787B |
+| Q3 2025 | $1.382B |
+| Q4 2025 | $2.040B |
 
-Source: [Simon Willison · Oct. 15, 2026](https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/), summarizing [Financial Times reporting](https://www.ft.com/content/11632d03-358c-454b-af95-d06d4072932b) on figures Anthropic told investors. These are reported figures, not independently verified financial statements.
+Source: the same unaudited quarterly table, p. 158. These sum to $4.585B for 2025. They are not included in the comparison chart because the run-rate series does not cover those quarters.
 
 ## Annual run-rate milestones
+
+The S-1 defines Run-Rate Revenue as trailing 28-day consumption fees multiplied by 13, plus monthly subscription fees at the measurement date multiplied by 12. This is not an instantaneous daily rate, GAAP revenue, or a forecast, so integrating it is only a rough comparison. The filing leaves its October 31, 2026 run-rate value blank; no new numeric milestone has been added here.
 
 | Date represented | Annual run rate | Source |
 | --- | ---: | --- |
