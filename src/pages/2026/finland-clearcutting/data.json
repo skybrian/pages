@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "source": "Natural Resources Institute Finland (Luke); Finnish Forest Centre",
+    "table": "0400_methoi",
+    "url": "https://statdb.luke.fi/PxWeb/pxweb/en/LUKE/LUKE__met__methoi/0400_methoi.px/",
+    "api": "https://statdb.luke.fi/PxWeb/api/v1/en/LUKE/met/methoi/0400_methoi.px",
+    "retrieved": "2026-10-31",
+    "updated": "2026-06-24T05:00:00Z",
+    "measure": "Area notified for clear-cutting, not completed fellings",
+    "region": "WHOLE COUNTRY",
+    "ownership": "TOTAL",
+    "sourceUnit": "hectares",
+    "displayUnit": "km²",
+    "conversion": "Divide hectares by 100 to obtain square kilometres.",
+    "notes": [
+      "Data for the years 2020-2023 have been corrected in the statistical database on 2.10.2024."
+    ],
+    "request": {
+      "query": [
+        {
+          "code": "INFO",
+          "selection": {
+            "filter": "item",
+            "values": [
+              "HA"
+            ]
+          }
+        },
+        {
+          "code": "A",
+          "selection": {
+            "filter": "item",
+            "values": [
+              "2015",
+              "2016",
+              "2017",
+              "2018",
+              "2019",
+              "2020",
+              "2021",
+              "2022",
+              "2023",
+              "2024",
+              "2025"
+            ]
+          }
+        },
+        {
+          "code": "MK",
+          "selection": {
+            "filter": "item",
+            "values": [
+              "SSS"
+            ]
+          }
+        },
+        {
+          "code": "OM",
+          "selection": {
+            "filter": "item",
+            "values": [
+              "OM_YHT"
+            ]
+          }
+        },
+        {
+          "code": "HAKT",
+          "selection": {
+            "filter": "item",
+            "values": [
+              "AVO"
+            ]
+          }
+        }
+      ],
+      "response": {
+        "format": "json-stat2"
+      }
+    }
+  },
+  "annual": [
+    {
+      "year": 2015,
+      "hectares": 120841
+    },
+    {
+      "year": 2016,
+      "hectares": 133286
+    },
+    {
+      "year": 2017,
+      "hectares": 136856
+    },
+    {
+      "year": 2018,
+      "hectares": 159695
+    },
+    {
+      "year": 2019,
+      "hectares": 109076
+    },
+    {
+      "year": 2020,
+      "hectares": 124189
+    },
+    {
+      "year": 2021,
+      "hectares": 166757
+    },
+    {
+      "year": 2022,
+      "hectares": 135876
+    },
+    {
+      "year": 2023,
+      "hectares": 136223
+    },
+    {
+      "year": 2024,
+      "hectares": 168504
+    },
+    {
+      "year": 2025,
+      "hectares": 155130
+    }
+  ]
+}
