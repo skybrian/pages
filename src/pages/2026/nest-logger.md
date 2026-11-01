@@ -1,43 +1,34 @@
 ---
 title: Nest Logger
-description: A private application for recording and reviewing Google Nest device data.
 date: 2026-11-01
+description: Because the Google Cloud Console requires an OAuth landing page
 ---
 
-A private application for recording and reviewing data from Google Nest devices.
-Access is restricted to authorized users; public registration is not available.
+Nest Logger is a personal app that polls a Nest Thermostat and graphs its readings. Access is restricted to authorized users; public registration is not available.
 
 [Open Nest Logger (authorized users only)](https://nest-logger.exe.xyz/)
 
 [Privacy policy](#privacy) · [Terms of service](#terms) · [Contact](#contact)
 
-> **Draft:** Replace all bracketed placeholders and confirm the statements below
-> match the application's actual behavior before using this page for OAuth branding.
-
 <h2 id="privacy">Privacy policy</h2>
 
-Nest Logger is operated by [operator name] for personal use.
+Nest Logger is operated by Brian Slesinsky for personal use.
 
-**Data accessed and purpose:** Nest Logger accesses [specific device information
-and readings] through Google's Nest API to [describe the purpose]. It stores
-Google authorization tokens to maintain that access.
+**Data accessed and purpose:** Nest Logger polls one Nest Thermostat using Google's
+Nest API to draw a graph. It stores Google authorization tokens to maintain that
+access.
 
 **Storage and sharing:** Device data and authorization tokens are stored
-[where they are stored] and are accessible to [who has access]. [Describe any
-hosting providers or other services that process the data, and any other sharing.]
-Data is not sold or used for advertising.
+in a sqlite database in an exe.dev VM. All data is accessible to Brian Slesinsky. The graph can be seen by another
+user that I shared the app with. Data is not sold or used for advertising.
 
-**Retention and deletion:** Device data is retained [for how long]. Authorization
-tokens are retained [until when]. To request deletion of stored data or
-credentials, contact [contact email]. Revoking Google access stops future access
-but does not itself delete previously stored data.
+**Retention and deletion:** Device data and authorization tokens are retained indefinitely.
 
 <h2 id="terms">Terms of service</h2>
 
-Nest Logger is a private, personal-use tool for authorized users only.
-It is provided “as is,” without guarantees of availability or accuracy, and may
+Nest Logger is provided “as is,” without guarantees of availability or accuracy, and may
 be changed or discontinued at any time.
 
 <h2 id="contact">Contact</h2>
 
-For questions about the application, privacy, or data deletion, email [contact email].
+For questions, email brian-web@slesinsky.org.
