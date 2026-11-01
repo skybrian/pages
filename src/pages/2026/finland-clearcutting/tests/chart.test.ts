@@ -46,6 +46,7 @@ it("renders metric annual bars with accessible caveats but no redundant visible 
         assert.doesNotMatch(svg.textContent!, /\de\+/);
         for (const label of svg.querySelectorAll(":scope > text")) {
           assert.equal(label.getAttribute("text-anchor"), "start");
+          assert.notEqual(label.textContent, "Finland");
         }
         assert.equal(svg.querySelectorAll('g[aria-label="bar"] rect').length, data.annual.length);
       }
