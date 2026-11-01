@@ -45,7 +45,7 @@ export default defineChartPage<Dataset>({
       }));
       const svg = Plot.plot({
         document, width, height: chartHeight,
-        marginTop: 68, marginLeft: left, marginRight: 18, marginBottom: 80,
+        marginTop: 68, marginLeft: left, marginRight: 18, marginBottom: 60,
         style: { fontSize: mode === "preview" ? "16px" : "12px" },
         x: {
           label: null,
@@ -73,8 +73,7 @@ export default defineChartPage<Dataset>({
         svg.append(node);
       };
       text("Area notified for clear-cutting (km²)", 22, mode === "preview" ? 20 : compact ? 13 : 16);
-      text(`Finland · ${points[0]!.year}–${points.at(-1)!.year}`, 44, mode === "preview" ? 16 : 12);
-      text("Notifications, not completed fellings", chartHeight - 30, mode === "preview" ? 16 : 11);
+      text("Finland", 44, mode === "preview" ? 16 : 12);
       text("Source: Luke / Finnish Forest Centre", chartHeight - 10, mode === "preview" ? 14 : 10, "#64748b");
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", `Area notified for clear-cutting in Finland, ${points[0]!.year}–${points.at(-1)!.year}, in square kilometres. Notifications, not completed fellings.`);

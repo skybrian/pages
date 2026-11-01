@@ -28,7 +28,7 @@ it("validates annual areas, ordering, and missing years", () => {
   assert.equal(chart.parseData({ annual: [{ year: 2020, hectares: 0 }] }).annual[0]!.hectares, 0);
 });
 
-it("renders one bar per year with metric units and notification caveats at all sizes", () => {
+it("renders metric annual bars with accessible caveats but no redundant visible labels", () => {
   const dom = new JSDOM("");
   try {
     const data = chart.parseData(raw);
@@ -39,8 +39,10 @@ it("renders one bar per year with metric units and notification caveats at all s
         });
         assert.equal(svg.getAttribute("role"), "img");
         assert.match(svg.getAttribute("aria-label")!, /square kilometres/);
+        assert.match(svg.getAttribute("aria-label")!, /Notifications, not completed fellings/);
         assert.match(svg.textContent!, /km²/);
-        assert.match(svg.textContent!, /Notifications, not completed fellings/);
+        assert.doesNotMatch(svg.textContent!, /Notifications, not completed fellings/);
+        assert.doesNotMatch(svg.textContent!, /Finland ·/);
         assert.doesNotMatch(svg.textContent!, /\de\+/);
         for (const label of svg.querySelectorAll(":scope > text")) {
           assert.equal(label.getAttribute("text-anchor"), "start");
