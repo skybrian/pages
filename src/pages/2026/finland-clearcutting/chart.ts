@@ -36,6 +36,10 @@ export default defineChartPage<Dataset>({
     alt: "Annual area notified for clear-cutting in Finland, 2015–2025, in square kilometres. Notifications do not measure completed fellings.",
     render(data, { document, width, height, mode }) {
       const compact = width < 560;
+      const headingLines = width < 896
+        ? ["Total area of felling notifications", "to Finnish Forest Centre (km²)"]
+        : ["Total area of felling notifications to Finnish Forest Centre (km²)"];
+      const headingSize = compact ? 13 : mode === "preview" ? 20 : 16;
       const left = compact ? 48 : 66;
       const chartHeight = mode === "preview" ? height : Math.max(height, 400);
       const points = data.annual.map(row => ({
@@ -45,7 +49,8 @@ export default defineChartPage<Dataset>({
       }));
       const svg = Plot.plot({
         document, width, height: chartHeight,
-        marginTop: 48, marginLeft: left, marginRight: 18, marginBottom: 60,
+        marginTop: headingLines.length === 1 ? 48 : 70,
+        marginLeft: left, marginRight: 18, marginBottom: 60,
         style: { fontSize: mode === "preview" ? "16px" : "12px" },
         x: {
           label: null,
@@ -72,8 +77,7 @@ export default defineChartPage<Dataset>({
         node.textContent = label;
         svg.append(node);
       };
-      text("Area notified for clear-cutting (km²)", 22, mode === "preview" ? 20 : compact ? 13 : 16);
-
+      headingLines.forEach((line, index) => text(line, 22 + index * 24, headingSize));
       text("Source: Luke / Finnish Forest Centre", chartHeight - 10, mode === "preview" ? 14 : 10, "#64748b");
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", `Area notified for clear-cutting in Finland, ${points[0]!.year}–${points.at(-1)!.year}, in square kilometres. Notifications, not completed fellings.`);

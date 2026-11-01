@@ -41,6 +41,10 @@ it("renders metric annual bars with accessible caveats but no redundant visible 
         assert.match(svg.getAttribute("aria-label")!, /square kilometres/);
         assert.match(svg.getAttribute("aria-label")!, /Notifications, not completed fellings/);
         assert.match(svg.textContent!, /km²/);
+        const headings = [...svg.querySelectorAll(":scope > text")].slice(0, -1);
+        assert.equal(headings.map(label => label.textContent).join(" "),
+          "Total area of felling notifications to Finnish Forest Centre (km²)");
+        assert.equal(headings.length, width < 896 ? 2 : 1);
         assert.doesNotMatch(svg.textContent!, /Notifications, not completed fellings/);
         assert.doesNotMatch(svg.textContent!, /Finland ·/);
         assert.doesNotMatch(svg.textContent!, /\de\+/);
