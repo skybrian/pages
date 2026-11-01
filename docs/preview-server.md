@@ -18,6 +18,11 @@ unrecognized text extensions remain plain text.
 
 ## Stale output
 
+Source changes still trigger background rebuilds, but automatic browser reloads
+are disabled throughout preview so autosave cannot interrupt editing. Refresh a
+preview page manually to see the latest build. In the file browser, switching
+tabs refreshes the file views without reloading the page.
+
 Eleventy does not remove previously generated files when their sources are
 deleted or excluded. If an obsolete page remains available in preview, stop
 the preview server, remove that page's generated output from `_preview/`, and

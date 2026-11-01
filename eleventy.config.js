@@ -14,7 +14,7 @@ import { chartVendors } from "./scripts/chart-vendor.js";
  *     outputMode: string,
  *     results?: Array<{ inputPath?: string, url?: string | false }>,
  *   }) => Promise<void>) => void,
- *   setServerOptions: (options: { middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
+ *   setServerOptions: (options: { liveReload: boolean, middleware: Array<(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse, next: (error?: unknown) => void) => unknown> }) => void
  * }} SiteConfig
  */
 
@@ -72,6 +72,8 @@ export default async function (eleventyConfig) {
     const fileBrowserModule = tsImport("./preview/files.ts", { parentURL: import.meta.url });
     const { createFileBrowserMiddleware } = await fileBrowserModule;
     eleventyConfig.setServerOptions({
+      // Rebuild on save, but never interrupt the editor with a browser reload.
+      liveReload: false,
       middleware: [
         createEditorAssetsMiddleware(),
         createMicrolighterAssetsMiddleware(fileURLToPath(new URL(".", import.meta.url))),

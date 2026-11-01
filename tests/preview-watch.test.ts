@@ -35,7 +35,7 @@ describe("Eleventy preview file watching", () => {
       path.join(root, "src/_includes/preview-ribbon.njk"),
     );
     await writeFile(path.join(root, "src/_includes/test.njk"),
-      '{% include "preview-ribbon.njk" %}{{ content | safe }}{{ page.inputPath | initialCharts | safe }}');
+      '<!doctype html><html><body>{% include "preview-ribbon.njk" %}{{ content | safe }}{{ page.inputPath | initialCharts | safe }}</body></html>');
     await writeFile(path.join(root, "package.json"), '{"type":"module"}\n');
     await writeFile(path.join(root, "src/pages/AGENTS.md"),
       "---\npermalink: /AGENTS/index.html\n---\n\nPage authoring guidance\n");
@@ -95,6 +95,13 @@ describe("Eleventy preview file watching", () => {
       assert.match(await readFile(htmlPath, "utf8"), /Initial content/);
       assert.match(await readFile(htmlPath, "utf8"), /Chart 1\/1/);
       assert.match(await readFile(htmlPath, "utf8"), /class="preview-ribbon"/);
+      // Do not inject a browser reload client; watching/rebuilds continue below.
+      for (const route of ["/sample/"]) {
+        const response = await fetch(`http://localhost:${port}${route}`);
+        const html = await response.text();
+        assert.equal(response.status, 200, `${route}: ${html}`);
+        assert.doesNotMatch(html, /\/\.11ty\/reload-client\.js/);
+      }
       for (const route of ["/AGENTS/", "/sample/AGENTS/"]) {
         assert.equal((await fetch(`http://localhost:${port}${route}`)).status, 404,
           `${route}: agent guidance must not be served as a preview page`);
