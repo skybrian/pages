@@ -43,7 +43,7 @@ export default defineChartPage<RevenueData>({
   charts: [{
     id: "quarterly-revenue",
     label: "Quarterly Revenue",
-    alt: "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1 and $11.555 billion in Q2 (S-1, unaudited); $16.8 billion in Q3 (press report, not in S-1). Not annualized.",
+    alt: "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1, $11.555 billion in Q2, and $16.956 billion in Q3 (S-1/A, unaudited). Not annualized.",
     render(data, { document, width, height, mode }) {
       const points = data.quarterlyRevenue;
       const compact = width < 560;
@@ -69,8 +69,8 @@ export default defineChartPage<RevenueData>({
         ],
       }) as unknown as SVGSVGElement;
       for (const [index, label] of [
-        "Q1–Q2: S-1 (unaudited).",
-        "Q3: press report, not in S-1. All values in $B.",
+        "Q1–Q3: S-1/A (unaudited).",
+        "All values in $B; not annualized.",
       ].entries()) {
         const note = document.createElementNS("http://www.w3.org/2000/svg", "text");
         note.setAttribute("x", String(compact ? 48 : 62));
@@ -82,7 +82,7 @@ export default defineChartPage<RevenueData>({
         svg.append(note);
       }
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1 and $11.555 billion in Q2 (S-1, unaudited); $16.8 billion in Q3 (press report, not in S-1). Not annualized.");
+      svg.setAttribute("aria-label", "Reported Anthropic quarterly revenue in 2026: $4.731 billion in Q1, $11.555 billion in Q2, and $16.956 billion in Q3 (S-1/A, unaudited). Not annualized.");
       return svg;
     },
   }, {
@@ -154,7 +154,7 @@ export default defineChartPage<RevenueData>({
   }, {
     id: "comparison",
     label: "Comparison",
-    alt: "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q2 reported figures are from the unaudited S-1; Q3 is a press report. Q3 estimates include linear extrapolation beyond July 31.",
+    alt: "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q3 reported figures are from the unaudited S-1/A. Q3 estimates include linear extrapolation beyond July 31.",
     render(data, { document, width, height, mode }) {
       const compact = width < 560;
       const renderHeight = mode !== "preview" ? Math.max(height, 400) : height;
@@ -215,9 +215,9 @@ export default defineChartPage<RevenueData>({
       text("■ Run-rate estimate", left + (compact ? 87 : 120), 23, compact ? 11 : 14, "#b65e16");
       text("* Q3 extends the May–July trend", left, renderHeight - 46, compact ? 10 : 12);
       text("beyond July 31. All values in $B.", left, renderHeight - 30, compact ? 10 : 12);
-      text("Reported: Q1–Q2 S-1 (unaudited); Q3 press.", left, renderHeight - 14, compact ? 10 : 12);
+      text("Reported: Q1–Q3 S-1/A (unaudited).", left, renderHeight - 14, compact ? 10 : 12);
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q2 reported figures are from the unaudited S-1; Q3 is a press report. Q3 estimates include linear extrapolation beyond July 31.");
+      svg.setAttribute("aria-label", "Quarterly revenue compared with estimates from the area under the annual run-rate curve, in billions of dollars. Q1–Q3 reported figures are from the unaudited S-1/A. Q3 estimates include linear extrapolation beyond July 31.");
       return svg;
     },
   }],
