@@ -30,6 +30,7 @@ function render(data: Row[], { document, width, height, mode }: {
   document: Document; width: number; height: number; mode: "interactive" | "static" | "preview";
 }, view: View): SVGSVGElement {
   const compact = width < 600;
+  const thinYearTicks = width < 500;
   const tall = Math.max(400, height);
   const legendFontSize = mode === "preview" ? 16 : compact ? 11 : 12;
   const legendItems: Array<{ name: string; x: number; row: number }> = [];
@@ -82,7 +83,7 @@ function render(data: Row[], { document, width, height, mode }: {
     x: {
       label: null,
       domain: rows.map(r => r.label),
-      ticks: compact ? rows.filter((_, i) => i % 2 === 0 || i === rows.length - 1).map(r => r.label) : undefined,
+      ticks: thinYearTicks ? rows.filter((_, i) => i % 2 === 0 || i === rows.length - 1).map(r => r.label) : undefined,
       tickSize: 0,
     },
     y: {
