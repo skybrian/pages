@@ -50,9 +50,9 @@ export async function finishChartBuild() {
   if (current) await current.worker.terminate();
 }
 
-/** @param {string} inputPath @param {"charts" | "tabs"} part @returns {Promise<string>} */
-export async function renderInitialCharts(inputPath, part = "charts") {
-  return getWorker().request("render", [inputPath, part]);
+/** @param {string} inputPath @param {"charts" | "tabs"} part @param {string} [chartId] @returns {Promise<string>} */
+export async function renderInitialCharts(inputPath, part = "charts", chartId) {
+  return getWorker().request("render", [inputPath, part, chartId]);
 }
 
 /** @param {{ pagesDirectory?: string, siteOutputDirectory?: string, outputMode?: string }} options */

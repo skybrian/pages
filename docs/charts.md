@@ -80,18 +80,26 @@ upgrading a package and its lockfile updates its browser filename automatically.
 
 The shared runtime fetches and validates JSON once, handles loading/errors and
 responsive redraws, and shows keyboard-accessible tabs only when there is more
-than one chart. Tab IDs are reflected in the URL fragment (for example `#shares`).
+than one chart. For multi-view pages, each chart ID is also a URL-safe path
+segment and receives a static share URL (for example
+`/2026/my-chart/shares/`). Tabs navigate between those paths without a full
+reload; browser back/forward restores the selected view. The original page URL
+continues to show the first chart, and legacy fragment links such as `#shares`
+still select their chart. Single-chart pages do not get extra paths and keep
+their tabs hidden. IDs must be lowercase letters/digits separated by optional
+single hyphens, and must not shadow an authored child page directory.
 The shared Copy SVG button exports the currently selected chart.
 The JSON schema is page-specific; multiple chart views share the same dataset.
 
 During builds, Eleventy bundles generated browser entry points with esbuild and
-publishes adjacent `data.json` files. The build also calls the designated chart's
-renderer using JSDOM in `preview` mode and rasterizes it with Sharp into a
-1200×630 `chart.png` beside the page's HTML, `chart.js`, and `data.json`. The initial HTML points
-Open Graph metadata at this image's absolute production URL. Each page has one
-social image, regardless of the selected tab; fragments do not select a different
-social card. Invalid data or a broken preview fails the build. Builds use checked-in
-data and do not fetch external sources or require a browser.
+publishes adjacent `data.json` files. Each view URL contains a static SVG rendered
+at all responsive sizes, selects its view before JavaScript runs, and has
+view-specific Open Graph URL/image metadata. View images use content-hashed
+filenames; the original `chart.png` URL remains available and retains the
+`previewChart` image (or the first chart when unset). Relative authored links
+and scripts resolve against the canonical chart-page URL on nested view paths.
+Invalid data or a broken preview fails the build. Builds use checked-in data and
+do not fetch external sources or require a browser.
 
 Chart rendering runs in a disposable worker per build. All chart imports share
 one TypeScript loader and dependency cache within that worker; terminating it

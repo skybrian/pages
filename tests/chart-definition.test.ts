@@ -19,11 +19,14 @@ describe("defineChartPage", () => {
     assert.equal(definition.charts[0]?.id, "main");
   });
 
-  it("rejects missing charts, incomplete metadata, duplicate ids, and unknown previews", () => {
+  it("rejects missing charts, incomplete metadata, duplicate or unsafe ids, and unknown previews", () => {
     const parseData = (value: unknown) => value;
     assert.throws(() => defineChartPage({ parseData, charts: [] }), /at least one chart/);
     assert.throws(() => defineChartPage({ parseData, charts: [{ ...chart, alt: "" }] }), /unique id, label, alt text/);
     assert.throws(() => defineChartPage({ parseData, charts: [chart, chart] }), /unique id/);
+    for (const id of ["../escape", "has/slash", "Uppercase", "two--hyphens"]) {
+      assert.throws(() => defineChartPage({ parseData, charts: [{ ...chart, id }] }), /unique id/);
+    }
     assert.throws(() => defineChartPage({ parseData, charts: [chart], previewChart: "other" }), /Unknown previewChart/);
   });
 });

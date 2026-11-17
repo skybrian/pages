@@ -28,6 +28,44 @@ function setGlobals(dom: JSDOM): () => void {
 }
 
 describe("chart runtime", () => {
+  it("selects path views, pushes tab URLs, and restores them through browser history", async () => {
+    const dom = new JSDOM(`<base href="https://example.test/2026/chart/">
+      <div data-chart-tabs></div><div data-chart-root></div>`,
+    { url: "https://example.test/2026/chart/second/" });
+    const restore = setGlobals(dom);
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      value: async () => ({ ok: true, json: async () => ({ value: 4 }) }),
+    });
+    try {
+      const document = dom.window.document;
+      const root = document.querySelector<HTMLElement>("[data-chart-root]")!;
+      const controls = document.querySelector<HTMLElement>("[data-chart-tabs]")!;
+      const charts = ["first", "second"].map((id) => ({
+        id, label: id, alt: `${id} chart`,
+        render(data: { value: number }, { document: doc }: { document: Document }) {
+          const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.textContent = `${id}:${data.value}`;
+          return svg;
+        },
+      }));
+      mountChartPage({ parseData: (value: unknown) => value as { value: number }, charts }, { root, controls });
+      await wait();
+      assert.equal(root.querySelector("svg")?.textContent, "second:4");
+      controls.querySelector<HTMLButtonElement>('[data-chart-id="first"]')!.click();
+      await wait();
+      assert.equal(dom.window.location.pathname, "/2026/chart/first/");
+      assert.equal(root.querySelector("svg")?.textContent, "first:4");
+      dom.window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      assert.equal(dom.window.location.pathname, "/2026/chart/second/");
+      assert.equal(root.querySelector("svg")?.textContent, "second:4");
+    } finally {
+      restore();
+      dom.window.close();
+    }
+  });
+
   it("loads data once, honors fragments, supports keyboard tabs, labels the panel, and copies the active SVG", async () => {
     const dom = new JSDOM(`<!doctype html><div data-chart-tabs></div>
       <div data-chart-root></div><button data-copy-svg></button><span data-copy-status></span>`,

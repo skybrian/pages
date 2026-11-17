@@ -24,7 +24,8 @@ export function defineChartPage<Data>(definition: ChartDefinition<Data>): ChartD
   }
   const ids = new Set<string>();
   for (const chart of definition.charts) {
-    if (!chart.id || !chart.label || !chart.alt || typeof chart.render !== "function" || ids.has(chart.id)) {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(chart.id) || !chart.label || !chart.alt ||
+        typeof chart.render !== "function" || ids.has(chart.id)) {
       throw new Error("Each chart must have a unique id, label, alt text, and render function.");
     }
     ids.add(chart.id);

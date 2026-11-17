@@ -56,8 +56,15 @@ export function mountChartPage<Data>(
   const fragmentId = (): string => {
     try { return decodeURIComponent(location.hash.slice(1)); } catch { return ""; }
   };
-  let active = definition.charts.find((chart) => chart.id === fragmentId()) ?? definition.charts[0]!;
+  const basePath = new URL(document.querySelector("base")?.href ?? "./", location.href).pathname;
+  const pathId = (): string | undefined => {
+    const relativePath = location.pathname.slice(basePath.length).replace(/\/+$/, "");
+    return definition.charts.some((chart) => chart.id === relativePath) ? relativePath : undefined;
+  };
+  let active = definition.charts.find((chart) => chart.id === fragmentId()) ??
+    definition.charts.find((chart) => chart.id === pathId()) ?? definition.charts[0]!;
   let resizeTimer = 0;
+  let renderVersion = 0;
 
   const loadData = (): Promise<Data> => {
     dataPromise ??= fetch(dataUrl).then((response) => {
@@ -67,14 +74,17 @@ export function mountChartPage<Data>(
     return dataPromise;
   };
   const render = async (): Promise<void> => {
+    const version = ++renderVersion;
     root.setAttribute("aria-busy", "true");
     try {
       const data = await loadData();
+      if (version !== renderVersion) return;
       const svg = active.render(data, {
         document: root.ownerDocument,
         ...chartSize(root.getBoundingClientRect().width || root.clientWidth || 960),
         mode: "interactive",
       });
+      if (version !== renderVersion) return;
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", active.alt);
       svg.setAttribute("focusable", "false");
@@ -82,6 +92,7 @@ export function mountChartPage<Data>(
       root.setAttribute("aria-busy", "false");
       if (copyButton) copyButton.disabled = false;
     } catch (error) {
+      if (version !== renderVersion) return;
       root.setAttribute("aria-busy", "false");
       if (root.querySelector("svg")) {
         // Keep the build-time chart useful when enhancement fails.
@@ -96,9 +107,12 @@ export function mountChartPage<Data>(
     }
   };
 
-  const choose = (chart: (typeof definition.charts)[number], focus = false) => {
+  const choose = (chart: (typeof definition.charts)[number], focus = false, updatePath = false) => {
     active = chart;
-    history.replaceState(null, "", `#${encodeURIComponent(chart.id)}`);
+    if (updatePath) {
+      const path = `${basePath}${chart.id}/`;
+      history.pushState(null, "", path);
+    }
     for (const button of controls?.querySelectorAll<HTMLButtonElement>("[role=tab]") ?? []) {
       const selected = button.dataset.chartId === chart.id;
       button.setAttribute("aria-selected", String(selected));
@@ -132,13 +146,13 @@ export function mountChartPage<Data>(
         button.setAttribute("aria-selected", String(chart.id === active.id));
         button.tabIndex = chart.id === active.id ? 0 : -1;
         if (chart.id === active.id) root.setAttribute("aria-labelledby", button.id);
-        button.addEventListener("click", () => choose(chart));
+        button.addEventListener("click", () => choose(chart, false, true));
         button.addEventListener("keydown", (event) => {
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
           event.preventDefault();
           const next = event.key === "Home" ? 0 : event.key === "End" ? definition.charts.length - 1 :
             (index + (event.key === "ArrowRight" ? 1 : -1) + definition.charts.length) % definition.charts.length;
-          choose(definition.charts[next]!, true);
+          choose(definition.charts[next]!, true, true);
         });
         return button;
       }));
@@ -163,6 +177,11 @@ export function mountChartPage<Data>(
   window.addEventListener("hashchange", () => {
     const chart = definition.charts.find((item) => item.id === fragmentId());
     if (chart && chart.id !== active.id) choose(chart);
+  });
+  window.addEventListener("popstate", () => {
+    const chart = definition.charts.find((item) => item.id === fragmentId()) ??
+      definition.charts.find((item) => item.id === pathId()) ?? definition.charts[0]!;
+    if (chart.id !== active.id) choose(chart);
   });
   window.addEventListener("resize", () => {
     window.clearTimeout(resizeTimer);

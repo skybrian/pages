@@ -14,16 +14,19 @@ import type { ChartDefinition } from "../../src/charts/definition.ts";
 export async function assertStaticChartParity<Data>(
   pageDirectory: URL,
   definition: ChartDefinition<Data>,
+  chartId = definition.charts[0]!.id,
 ): Promise<void> {
   const pagePath = fileURLToPath(pageDirectory);
+  const chart = definition.charts.find((item) => item.id === chartId);
+  assert.ok(chart, `Unknown chart view: ${chartId}`);
   const data = definition.parseData(JSON.parse(await readFile(new URL("data.json", pageDirectory), "utf8")));
-  const html = await renderInitialCharts(fileURLToPath(new URL("index.md", pageDirectory)));
+  const html = await renderInitialCharts(fileURLToPath(new URL("index.md", pageDirectory)), "charts", chartId);
   const dom = new JSDOM(html);
   try {
     assert.equal(dom.window.document.querySelector("img"), null);
     for (const layout of CHART_LAYOUTS) {
       const initial = dom.window.document.querySelector<SVGSVGElement>(`.chart-static-${layout.name} svg`)!;
-      const enhanced = definition.charts[0]!.render(data, {
+      const enhanced = chart.render(data, {
         document: dom.window.document, ...chartSize(layout.minWidth), mode: "interactive",
       });
       assert.equal(initial.getAttribute("width"), enhanced.getAttribute("width"));
