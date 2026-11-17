@@ -129,5 +129,5 @@ export default defineChartPage<Row[]>({
     { id: "inflation", label: "Inflation (CPI-U)", alt: "Cumulative US consumer inflation indexed to 1979.", render: (d, o) => render(d, o, "inflation") },
     { id: "real", label: "Revenue in 2025 dollars", alt: "Stacked general fund revenue adjusted to 2025 dollars.", render: (d, o) => render(d, o, "real") }
   ],
-  previewChart: "nominal",
+  previewChart: "real",
 });
