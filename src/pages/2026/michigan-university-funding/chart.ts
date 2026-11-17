@@ -31,6 +31,20 @@ function render(data: Row[], { document, width, height, mode }: {
 }, view: View): SVGSVGElement {
   const compact = width < 600;
   const tall = Math.max(400, height);
+  const legendFontSize = mode === "preview" ? 16 : compact ? 11 : 12;
+  const legendItems: Array<{ name: string; x: number; row: number }> = [];
+  let legendX = 8;
+  let legendRow = 0;
+  for (const name of names) {
+    const itemWidth = 14 + 6 + name.length * legendFontSize * 0.57 + 16;
+    if (legendX > 8 && legendX + itemWidth > width - 8) {
+      legendRow++;
+      legendX = 8;
+    }
+    legendItems.push({ name, x: legendX, row: legendRow });
+    legendX += itemWidth;
+  }
+  const legendRows = legendRow + 1;
   const rows = data.map(row => ({ ...row, label: String(row.year) }));
   const marks: any[] = [];
   if (view === "inflation") {
@@ -60,7 +74,7 @@ function render(data: Row[], { document, width, height, mode }: {
     document,
     width,
     height: tall,
-    marginTop: mode === "preview" ? 58 : 36,
+    marginTop: (mode === "preview" ? 48 : 36) + legendRows * (legendFontSize + 6),
     marginBottom: compact ? 66 : 52,
     marginLeft: compact ? 46 : 66,
     marginRight: 18,
@@ -77,9 +91,30 @@ function render(data: Row[], { document, width, height, mode }: {
       zero: true,
       tickFormat: view === "inflation" ? d => String(d) : d => `$${d}B`,
     },
-    color: { domain: names, range: colors, legend: view !== "inflation" },
+    color: { domain: names, range: colors, legend: false },
     marks
   }) as SVGSVGElement;
+  if (view !== "inflation") {
+    const ns = "http://www.w3.org/2000/svg";
+    legendItems.forEach(({ name, x, row }) => {
+      const y = 30 + (row + 1) * (legendFontSize + 6);
+      const swatch = document.createElementNS(ns, "rect");
+      swatch.setAttribute("x", String(x));
+      swatch.setAttribute("y", String(y - legendFontSize));
+      swatch.setAttribute("width", "14");
+      swatch.setAttribute("height", String(legendFontSize));
+      swatch.setAttribute("fill", colors[names.indexOf(name)]!);
+      svg.append(swatch);
+      const label = document.createElementNS(ns, "text");
+      label.setAttribute("x", String(x + 20));
+      label.setAttribute("y", String(y));
+      label.setAttribute("font-size", String(legendFontSize));
+      label.setAttribute("text-anchor", "start");
+      label.setAttribute("fill", "#172323");
+      label.textContent = name;
+      svg.append(label);
+    });
+  }
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", view === "inflation"
     ? "CPI-U cumulative consumer price index, 1979 to 2025, for selected years."
