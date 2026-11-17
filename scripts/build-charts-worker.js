@@ -22,6 +22,20 @@ async function loadChart(chartPath) {
   if (!definition || typeof definition.parseData !== "function" || !Array.isArray(definition.charts) || !definition.charts.length) {
     throw new Error(`${chartPath} must default-export a chart definition.`);
   }
+  const chartIds = new Set();
+  for (const chart of definition.charts) {
+    if (!chart || typeof chart !== "object" ||
+        typeof chart.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(chart.id) ||
+        typeof chart.label !== "string" || !chart.label ||
+        typeof chart.alt !== "string" || !chart.alt ||
+        typeof chart.render !== "function" || chartIds.has(chart.id)) {
+      throw new Error(`${chartPath} has invalid chart metadata or an unsafe/duplicate chart id.`);
+    }
+    chartIds.add(chart.id);
+  }
+  if (definition.previewChart !== undefined && !chartIds.has(definition.previewChart)) {
+    throw new Error(`${chartPath} has an invalid previewChart.`);
+  }
   const data = definition.parseData(JSON.parse(await readFile(join(dirname(chartPath), "data.json"), "utf8")));
   return { definition, data };
 }
@@ -91,9 +105,15 @@ async function findChartEntries(directory) {
 export async function buildChartBundles({ pagesDirectory = resolve("src/pages"), siteOutputDirectory = "_site", outputMode = "fs" } = {}) {
   if (outputMode !== "fs") return;
   const entries = await findChartEntries(pagesDirectory);
+  // Load and validate every page before touching published output. In
+  // particular, untrusted/plain definition objects must not supply path IDs.
+  const loadedEntries = [];
+  for (const [name, chartPath] of entries) {
+    loadedEntries.push({ name, chartPath, ...(await loadChart(chartPath)) });
+  }
   // Remove shared chart assets left by builds before page-local output.
   await rm(resolve(siteOutputDirectory, "assets/charts"), { recursive: true, force: true });
-  if (!entries.length) return;
+  if (!loadedEntries.length) return;
   const vendorDirectory = resolve(siteOutputDirectory, "assets/vendor");
   await mkdir(vendorDirectory, { recursive: true });
   for (const vendor of chartVendors) {
@@ -101,8 +121,7 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
     await copyFile(vendor.license, join(vendorDirectory, basename(vendor.licenseUrl)));
   }
 
-  for (const [name, chartPath] of entries) {
-    const { definition, data } = await loadChart(chartPath);
+  for (const { name, chartPath, definition, data } of loadedEntries) {
     const preview = definition.charts.find(/** @param {any} chart */ (chart) => chart.id === (definition.previewChart ?? definition.charts[0].id));
     if (!preview) throw new Error(`${chartPath} has an invalid previewChart.`);
     const dom = new JSDOM("<!doctype html><html><body></body></html>");
@@ -163,10 +182,26 @@ export async function buildChartBundles({ pagesDirectory = resolve("src/pages"),
       }
       const variantDirectory = join(pageOutputDirectory, chart.id);
       const variantHtmlPath = join(variantDirectory, "index.html");
+      const owner = `${relative(resolve(siteOutputDirectory), pageOutputDirectory).split("\\").join("/")}/${chart.id}`;
+      const existingVariantHtml = await readFile(variantHtmlPath, "utf8").catch((error) => {
+        if (error?.code === "ENOENT") return undefined;
+        throw error;
+      });
+      if (existingVariantHtml) {
+        const existingDocument = new JSDOM(existingVariantHtml);
+        try {
+          if (existingDocument.window.document.documentElement.getAttribute("data-chart-view-owner") !== owner) {
+            throw new Error(`${variantHtmlPath} already exists and is not a generated chart view.`);
+          }
+        } finally {
+          existingDocument.window.close();
+        }
+      }
       await mkdir(variantDirectory, { recursive: true });
       const variantDom = new JSDOM(baseHtml);
       try {
         const { document } = variantDom.window;
+        document.documentElement.setAttribute("data-chart-view-owner", owner);
         const base = document.querySelector("base");
         if (base) base.setAttribute("href", "../");
         const root = document.querySelector("[data-chart-root]");

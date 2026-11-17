@@ -58,7 +58,7 @@ export function mountChartPage<Data>(
   };
   const basePath = new URL(document.querySelector("base")?.href ?? "./", location.href).pathname;
   const pathId = (): string | undefined => {
-    const relativePath = location.pathname.slice(basePath.length).replace(/\/+$/, "");
+    const relativePath = location.pathname.slice(basePath.length).replace(/\/index\.html$/i, "").replace(/\/+$/, "");
     return definition.charts.some((chart) => chart.id === relativePath) ? relativePath : undefined;
   };
   let active = definition.charts.find((chart) => chart.id === fragmentId()) ??
@@ -111,7 +111,7 @@ export function mountChartPage<Data>(
     active = chart;
     if (updatePath) {
       const path = `${basePath}${chart.id}/`;
-      history.pushState(null, "", path);
+      if (location.pathname !== path || location.search || location.hash) history.pushState(null, "", path);
     }
     for (const button of controls?.querySelectorAll<HTMLButtonElement>("[role=tab]") ?? []) {
       const selected = button.dataset.chartId === chart.id;

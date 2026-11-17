@@ -21,6 +21,27 @@ const definition = `export default {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); text.textContent = String(data.length); svg.append(text); return svg;
   }}], previewChart: 'main'
 };\n`;
+function plainDefinition(ids: string[]): string {
+  const charts = ids.map((id) =>
+    `{ id: ${JSON.stringify(id)}, label: ${JSON.stringify(id)}, alt: ${JSON.stringify(`${id} chart`)}, render }`,
+  ).join(", ");
+  return `
+    const render = (data, {document, width, height}) => {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      return svg;
+    };
+    export default {
+      parseData(value) { if (!Array.isArray(value)) throw new Error("invalid"); return value; },
+      charts: [${charts}],
+      previewChart: ${JSON.stringify(ids[0])}
+    };
+  `;
+}
+const basePageHtml = `<!doctype html><html><head></head><body>
+  <div data-chart-tabs></div><div data-chart-root></div>
+  <script type="module" src="./chart.js"></script>
+</body></html>`;
 
 describe("chart bundles", () => {
   it("validates data, writes browser entries and static previews only to configured output", async () => {
@@ -109,6 +130,84 @@ describe("chart bundles", () => {
       await assert.rejects(buildChartBundles({ pagesDirectory: path.join(root, "pages"), siteOutputDirectory: output }));
       await assert.rejects(readdir(path.join(output, "broken")), { code: "ENOENT" });
       await assert.rejects(readdir(path.join(output, "assets", "charts")), { code: "ENOENT" });
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
+  it("rejects unsafe or duplicate IDs in plain definitions before writing escaped views", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "chart-bundles-"));
+    const pages = path.join(root, "pages");
+    const output = path.join(root, "out");
+    const escapedIndex = path.resolve(output, "page", "../../escape", "index.html");
+    try {
+      const page = path.join(pages, "page");
+      await mkdir(page, { recursive: true });
+      await writeFile(path.join(page, "chart.ts"), plainDefinition(["../../escape", "safe"]));
+      await writeFile(path.join(page, "data.json"), "[]");
+      await mkdir(path.join(output, "page"), { recursive: true });
+      await writeFile(path.join(output, "page", "index.html"), basePageHtml);
+      await assert.rejects(
+        buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output }),
+        /unsafe\/duplicate chart id/,
+      );
+      await assert.rejects(readFile(escapedIndex), { code: "ENOENT" });
+
+      await writeFile(path.join(page, "chart.ts"), plainDefinition(["same", "same"]));
+      await assert.rejects(
+        buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output }),
+        /unsafe\/duplicate chart id/,
+      );
+      await assert.rejects(readFile(escapedIndex), { code: "ENOENT" });
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+
+  it("protects authored output indexes and only overwrites marked generated variants", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "chart-view-ownership-"));
+    const pages = path.join(root, "pages");
+    const output = path.join(root, "out");
+    const page = path.join(pages, "page");
+    const pageOutput = path.join(output, "page");
+    try {
+      await mkdir(page, { recursive: true });
+      await writeFile(path.join(page, "chart.ts"), plainDefinition(["first", "second"]));
+      await writeFile(path.join(page, "data.json"), "[]");
+      await mkdir(pageOutput, { recursive: true });
+      await writeFile(path.join(pageOutput, "index.html"), basePageHtml);
+      await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
+      const firstView = path.join(pageOutput, "first", "index.html");
+      const generatedMarkup = await readFile(firstView, "utf8");
+      assert.match(generatedMarkup, /data-chart-view-owner="page\/first"/);
+
+      await buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output });
+      assert.match(await readFile(firstView, "utf8"), /data-chart-view-owner="page\/first"/,
+        "a marked generated view can be rebuilt");
+
+      const authoredPath = path.join(pageOutput, "second", "index.html");
+      const authoredMarkup = "<!doctype html><html><body>authored page</body></html>";
+      await writeFile(authoredPath, authoredMarkup);
+      await assert.rejects(
+        buildChartBundles({ pagesDirectory: pages, siteOutputDirectory: output }),
+        /already exists and is not a generated chart view/,
+      );
+      assert.equal(await readFile(authoredPath, "utf8"), authoredMarkup,
+        "an existing authored output index must not be overwritten");
+
+      const nestedPages = path.join(root, "nested-pages");
+      const nestedOutput = path.join(root, "nested-out");
+      const nestedPage = path.join(nestedPages, "page");
+      const authoredDirectory = path.join(nestedPage, "safe");
+      const authoredSource = path.join(authoredDirectory, "index.md");
+      await mkdir(authoredDirectory, { recursive: true });
+      await writeFile(authoredSource, "# Authored child page\n");
+      await writeFile(path.join(nestedPage, "chart.ts"), plainDefinition(["first", "safe"]));
+      await writeFile(path.join(nestedPage, "data.json"), "[]");
+      await mkdir(path.join(nestedOutput, "page"), { recursive: true });
+      await writeFile(path.join(nestedOutput, "page", "index.html"), basePageHtml);
+      await assert.rejects(
+        buildChartBundles({ pagesDirectory: nestedPages, siteOutputDirectory: nestedOutput }),
+        /collides with an authored source path/,
+      );
+      assert.equal(await readFile(authoredSource, "utf8"), "# Authored child page\n");
+      await assert.rejects(readFile(path.join(nestedOutput, "page", "safe", "index.html")), { code: "ENOENT" });
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 

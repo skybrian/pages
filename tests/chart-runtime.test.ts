@@ -31,7 +31,7 @@ describe("chart runtime", () => {
   it("selects path views, pushes tab URLs, and restores them through browser history", async () => {
     const dom = new JSDOM(`<base href="https://example.test/2026/chart/">
       <div data-chart-tabs></div><div data-chart-root></div>`,
-    { url: "https://example.test/2026/chart/second/" });
+    { url: "https://example.test/2026/chart/second/index.html" });
     const restore = setGlobals(dom);
     Object.defineProperty(globalThis, "fetch", {
       configurable: true,
@@ -52,6 +52,14 @@ describe("chart runtime", () => {
       mountChartPage({ parseData: (value: unknown) => value as { value: number }, charts }, { root, controls });
       await wait();
       assert.equal(root.querySelector("svg")?.textContent, "second:4");
+      controls.querySelector<HTMLButtonElement>('[data-chart-id="second"]')!.click();
+      await wait();
+      assert.equal(dom.window.location.pathname, "/2026/chart/second/",
+        "clicking the selected view normalizes a direct index.html URL");
+      controls.querySelector<HTMLButtonElement>('[data-chart-id="second"]')!.click();
+      await wait();
+      assert.equal(dom.window.location.pathname, "/2026/chart/second/",
+        "reselecting a canonical view does not create another history entry");
       controls.querySelector<HTMLButtonElement>('[data-chart-id="first"]')!.click();
       await wait();
       assert.equal(dom.window.location.pathname, "/2026/chart/first/");
@@ -60,6 +68,10 @@ describe("chart runtime", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
       assert.equal(dom.window.location.pathname, "/2026/chart/second/");
       assert.equal(root.querySelector("svg")?.textContent, "second:4");
+      dom.window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      assert.equal(dom.window.location.pathname, "/2026/chart/second/index.html",
+        "reselecting the current view did not insert a duplicate history state");
     } finally {
       restore();
       dom.window.close();
